@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  app:
+    image: scada_fe:1.1.1
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    environment:
+      NODE_ENV: production
+    ports:
+      - 3000:3000
