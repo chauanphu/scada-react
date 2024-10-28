@@ -3,10 +3,9 @@
 import { useEffect, useState } from "react";
 import { Line } from "react-chartjs-2";
 import "chart.js/auto";
-import axios from "axios";
 import Cookies from "js-cookie";
 import { EnergyData } from "../types/Report";
-import { View } from "../lib/api";
+import { getEnergyData, View } from "../lib/api";
 import { Navbar } from "../components/NavBar";
 import { useAPI } from "../contexts/APIProvider";
 
@@ -34,13 +33,7 @@ const ReportPage: React.FC = () => {
     const fetchData = async () => {
       try {
         const token = Cookies.get("token") || "";
-        const data = await axios
-          .get<EnergyData[]>(`/api/status?view=${view}`, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          })
-          .then((res) => res.data);
+        const data = await getEnergyData(token, view);
 
         const labels = data.map((item) => {
           const date = new Date(item.time);
@@ -73,6 +66,7 @@ const ReportPage: React.FC = () => {
             case View.MONTHLY:
               // Format to show month and year
               return date.toLocaleString("default", {
+                day: "2-digit",
                 month: "long",
                 year: "numeric",
               });
