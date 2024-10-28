@@ -69,7 +69,7 @@ export const APIProvider: React.FC<APIProviderProps> = ({ children }) => {
             if (storedToken && await checkLogin(storedToken)) {
                 setToken(storedToken);
                 setIsAuthenticated(true);
-                // fetchClusters(storedToken);
+                fetchClusters(storedToken);
                 fetchPermissions(storedToken);  // Fetch permissions
             } else {
                 setToken(null);
@@ -102,7 +102,7 @@ export const APIProvider: React.FC<APIProviderProps> = ({ children }) => {
 
             setToken(authToken);
             setIsAuthenticated(true);
-            fetchClusters(authToken);
+            // fetchClusters(authToken);
             fetchPermissions(authToken);  // Fetch permissions after login
         } catch (error) {
             console.error("Login failed", error);

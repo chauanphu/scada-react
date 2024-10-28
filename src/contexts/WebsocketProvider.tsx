@@ -5,11 +5,10 @@ import React, {
   useState,
   useEffect,
   ReactNode,
-  useMemo,
 } from "react";
 import { useAPI } from "./APIProvider";
-import { NEXT_PUBLIC_WS_URL } from "../lib/api";
-import { UnitStatus } from "../types/Cluster";
+import { getClusters, NEXT_PUBLIC_WS_URL } from "../lib/api";
+import { Cluster, UnitStatus } from "../types/Cluster";
 
 interface WebSocketContextType {
   unitStatus: Record<number, UnitStatus>;
@@ -49,17 +48,24 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
   const apiContext = useAPI();
   const token = apiContext?.token;
   const isAuthenticated = apiContext?.isAuthenticated;
-  const clusters = useMemo(() => {
-    return apiContext?.clusters || [];
-  }, [apiContext?.clusters]);
+  const [clusters, setClusters] = useState<Cluster[]>([]);
+  // const clusters = useMemo(() => {
+  //   return apiContext?.clusters || [];
+  // }, [apiContext?.clusters]);
+
   const [sockets, setSockets] = useState<Map<number, WebSocket>>(new Map());
   const [unitStatus, setUnitStatus] = useState<Record<number, UnitStatus>>({});
   const [selectedUnit, setSelectedUnit] = useState<UnitStatus | null>(null);
 
   useEffect(() => {
+    if (isAuthenticated && token) {
+      fetchClusters(token);
+    }
+  }, [isAuthenticated, token]);
+
+  useEffect(() => {
     const connectWebSocket = (unitId: number) => {
       const ws = new WebSocket(`${NEXT_PUBLIC_WS_URL}/unit/${unitId}/status`);
-
       ws.onmessage = (event) => {
         const data: AliveResponse | StatusResponse = JSON.parse(event.data);
         // Handle alive message
@@ -86,7 +92,6 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
       };
       return ws;
     };
-
     if (isAuthenticated && token && clusters.length > 0) {
       //
       const newSockets = new Map<number, WebSocket>();
@@ -103,6 +108,11 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
       };
     }
   }, [isAuthenticated, token, clusters]);
+
+  const fetchClusters = async (token: string) => {
+    const data = await getClusters(token);
+    setClusters(data);
+  };
 
   const sendMessage = (unitId: number, message: string) => {
     const ws = sockets.get(unitId);
