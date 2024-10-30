@@ -7,14 +7,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body className={`antialiased`}>
+    <>
+      {/* <body className={`antialiased`}> */}
         <APIProvider>
           <WebSocketProvider>
             <main className="h-screen">{children}</main>
           </WebSocketProvider>
         </APIProvider>
-      </body>
-    </html>
+      {/* </body> */}
+    </>
   );
 }
