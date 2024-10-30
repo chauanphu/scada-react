@@ -2,7 +2,7 @@ import React, { createContext, useState, useEffect, useContext, ReactNode } from
 import {
     getToken,
     checkLogin,
-    getClusters,
+    // getClusters,
     getUsers,
     createUser,
     updateUser,
@@ -27,7 +27,7 @@ import { PermissionEnum } from "../components/NavBar";
 interface APIContextType {
     token: string | null;
     isAuthenticated: boolean;
-    clusters: Cluster[];
+    // clusters: Cluster[];
     permissions: PermissionEnum[];
     login: (username: string, password: string) => Promise<void>;
     logout: () => void;
@@ -59,7 +59,7 @@ interface APIProviderProps {
 export const APIProvider: React.FC<APIProviderProps> = ({ children }) => {
     const [token, setToken] = useState<string | null>(null);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const [clusters, setClusters] = useState<Cluster[]>([]);
+    // const [clusters, setClusters] = useState<Cluster[]>([]);
     const [permissions, setPermissions] = useState<PermissionEnum[]>([]);
     const navigate = useNavigate();
 
@@ -69,7 +69,7 @@ export const APIProvider: React.FC<APIProviderProps> = ({ children }) => {
             if (storedToken && await checkLogin(storedToken)) {
                 setToken(storedToken);
                 setIsAuthenticated(true);
-                fetchClusters(storedToken);
+                //  fetchClusters(storedToken);
                 fetchPermissions(storedToken);  // Fetch permissions
             } else {
                 setToken(null);
@@ -81,10 +81,10 @@ export const APIProvider: React.FC<APIProviderProps> = ({ children }) => {
         checkUserAuth();
     }, [navigate]);
 
-    const fetchClusters = async (token: string) => {
-        const data = await getClusters(token);
-        setClusters(data);
-    };
+    // const fetchClusters = async (token: string) => {
+    //     const data = await getClusters(token);
+    //     setClusters(data);
+    // };
 
     const fetchPermissions = async (token: string) => {
         try {
@@ -130,7 +130,7 @@ export const APIProvider: React.FC<APIProviderProps> = ({ children }) => {
             value={{
                 token,
                 isAuthenticated,
-                clusters,
+                // clusters,
                 permissions,
                 login,
                 logout,
