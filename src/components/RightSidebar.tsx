@@ -1,6 +1,6 @@
 import { useWebSocket } from "../contexts/WebsocketProvider"; // Assuming WebSocketProvider is in context folder
 import { Button } from "./ui/button";
-import { Unit, UnitStatus } from "../types/Cluster";
+import { Unit } from "../types/Cluster";
 import { useEffect, useMemo, useState } from "react";
 import { setCommand } from "../lib/api";
 import Cookies from "js-cookie";
