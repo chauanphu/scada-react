@@ -1,6 +1,6 @@
 import { useWebSocket } from "../contexts/WebsocketProvider"; // Assuming WebSocketProvider is in context folder
 import { Button } from "./ui/button";
-import { Unit } from "../types/Cluster";
+import { Unit, UnitStatus } from "../types/Cluster";
 import { useEffect, useMemo, useState } from "react";
 import { setCommand } from "../lib/api";
 import Cookies from "js-cookie";
@@ -26,8 +26,9 @@ export const RightSidebar = ({ selectedUnit }: RightSidebarProps) => {
 
   useEffect(() => {
     if (selectedUnit) {
-      const { isConnected, isOn, power, current, voltage } = unitStatus[selectedUnit.id] || {};
+      const { isConnected, isOn, power, current, voltage, hour_on, hour_off, minute_off, minute_on } = unitStatus[selectedUnit.id] || {};
       setUnitData({ isConnected, isOn, power, current, voltage });
+      setSchedule({ hourOn: hour_on, minuteOn: minute_on, hourOff: hour_off, minuteOff: minute_off });
     }
   }, [selectedUnit, unitStatus]);
   const [schedule, setSchedule] = useState({

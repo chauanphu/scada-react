@@ -40,6 +40,10 @@ type StatusResponse = {
   gps_lat: number;
   total_energy: number;
   toggle: number;
+  hour_on: number;
+  minute_on: number;
+  hour_off: number;
+  minute_off: number;
 };
 
 export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
@@ -86,6 +90,10 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
               voltage: data.voltage,
               gps_lat: data.gps_lat,
               gps_log: data.gps_log,
+              hour_on: data.hour_on,
+              minute_on: data.minute_on,
+              hour_off: data.hour_off,
+              minute_off: data.minute_off,
             },
           }));
         }

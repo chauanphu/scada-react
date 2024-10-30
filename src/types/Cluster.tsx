@@ -16,6 +16,10 @@ export type Unit = {
     voltage: number;
     gps_log: number;
     gps_lat: number;
+    hour_on: number;
+    minute_on: number;
+    hour_off: number;
+    minute_off: number;
 };
 
 export type Cluster = {
