@@ -21,9 +21,8 @@ export default function HomePage() {
 
   useEffect(() => {
     fetchClusters();
-    const token = Cookies.get('token') || '';
-    getClusters(token).then(setClusters);
-
+    // const token = Cookies.get('token') || '';
+    // getClusters(token).then(setClusters);
   }, []);
 
   const fetchClusters = async () => {
