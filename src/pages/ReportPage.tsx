@@ -33,7 +33,7 @@ const ReportPage: React.FC = () => {
     const fetchData = async () => {
       try {
         const token = Cookies.get("token") || "";
-        const data = await getEnergyData(token, view);
+        const data: EnergyData[] = await getEnergyData(token, view);
 
         const labels = data.map((item) => {
           const date = new Date(item.time);
