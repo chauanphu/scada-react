@@ -16,70 +16,94 @@ export const RightSidebar = ({ selectedUnit }: RightSidebarProps) => {
   }, [socketContext]);
 
   const toggleLight = socketContext?.toggleLight || (() => {});
+  const toggleAuto = socketContext?.toggleAutomatic || (() => {});
+
   const [unitData, setUnitData] = useState({
     isConnected: false,
     isOn: false,
+    isAutomatic: false,
     power: 0,
     current: 0,
-    voltage: 0
+    voltage: 0,
   });
 
   useEffect(() => {
     if (selectedUnit) {
-      const { isConnected, isOn, power, current, voltage, hour_on, hour_off, minute_off, minute_on } = unitStatus[selectedUnit.id] || {};
-      setUnitData({ isConnected, isOn, power, current, voltage });
-      setSchedule({ hourOn: hour_on, minuteOn: minute_on, hourOff: hour_off, minuteOff: minute_off });
+      const {
+        isConnected,
+        isOn,
+        isAutomatic,
+        power,
+        current,
+        voltage,
+        hour_on,
+        hour_off,
+        minute_off,
+        minute_on,
+      } = unitStatus[selectedUnit.id] || {};
+      setUnitData({ isConnected, isOn, power, current, voltage, isAutomatic});
+      setSchedule({
+        hourOn: hour_on,
+        minuteOn: minute_on,
+        hourOff: hour_off,
+        minuteOff: minute_off,
+      });
     }
   }, [selectedUnit, unitStatus]);
   const [schedule, setSchedule] = useState({
     hourOn: 0,
     minuteOn: 0,
     hourOff: 0,
-    minuteOff: 0
+    minuteOff: 0,
   });
   const token = Cookies.get("token") || "";
   const handleScheduleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setSchedule(prevState => ({
+    setSchedule((prevState) => ({
       ...prevState,
-      [name]: Number(value)
+      [name]: Number(value),
     }));
   };
 
   const handleSetSchedule = () => {
     if (unitData.isConnected && selectedUnit) {
-      setCommand(
-        token, 
-        selectedUnit.id,
-        "schedule", 
-        schedule);
+      setCommand(token, selectedUnit.id, "schedule", schedule);
     }
   };
 
   const handleToggle = () => {
     if (unitData.isConnected && selectedUnit) {
-      setCommand(
-        token, 
-        selectedUnit.id,
-        "toggle", 
-        !unitData.isOn);
-        toggleLight(selectedUnit.id);
+      toggleLight(selectedUnit.id);
+      setCommand(token, selectedUnit.id, "auto", false);
+      setCommand(token, selectedUnit.id, "toggle", !unitData.isOn);
     }
-  };  
+  };
+
+  const handleToggleAutomatic = () => {
+    if (unitData.isConnected && selectedUnit) {
+      setCommand(token, selectedUnit.id, "auto", !unitData.isAutomatic);
+      toggleAuto(selectedUnit.id);
+    }
+  };
   if (!selectedUnit) {
     return (
       <div className="w-1/4 p-8 pt-[6rem] h-screen max-h-screen overflow-y-auto">
         <h3 className="text-lg font-semibold mb-4">Thông tin</h3>
         <div className="bg-white p-6 rounded-lg shadow space-y-4">
-          <p className="text-lg font-semibold">Chọn thiết bị để xem thông tin chi tiết</p>
+          <p className="text-lg font-semibold">
+            Chọn thiết bị để xem thông tin chi tiết
+          </p>
         </div>
       </div>
     );
   }
   return (
-    <div className="w-1/4 p-8 pt-[6rem] h-screen max-h-screen overflow-y-auto"> {/* Set height to screen with scroll */}
-      <h3 className="text-lg font-semibold mb-4">Thông tin - {selectedUnit.name}</h3>
-
+    <div className="w-1/4 p-8 pt-[6rem] h-screen max-h-screen overflow-y-auto">
+      {" "}
+      {/* Set height to screen with scroll */}
+      <h3 className="text-lg font-semibold mb-4">
+        Thông tin - {selectedUnit.name}
+      </h3>
       <div className="bg-white p-6 rounded-lg shadow space-y-4">
         <p className="text-lg font-semibold">
           Công suất tiêu thụ:
@@ -98,12 +122,23 @@ export const RightSidebar = ({ selectedUnit }: RightSidebarProps) => {
 
         <p className="text-lg font-semibold">
           Trạng thái:
-          <span className={`font-bold ml-2 ${unitData.isConnected ? (unitData.isOn ? "text-green-600" : "text-gray-600") : "text-red-600"}`}>
-            {unitData.isConnected ? (unitData.isOn ? " Mở" : " Tắt") : " Mất kết nối"}
+          <span
+            className={`font-bold ml-2 ${
+              unitData.isConnected
+                ? unitData.isOn
+                  ? "text-green-600"
+                  : "text-gray-600"
+                : "text-red-600"
+            }`}
+          >
+            {unitData.isConnected
+              ? unitData.isOn
+                ? " Mở"
+                : " Tắt"
+              : " Mất kết nối"}
           </span>
         </p>
       </div>
-
       <div className="mt-6 flex items-center space-x-4">
         <span className="text-sm font-semibold">Tắt</span>
         <label className="relative inline-flex items-center cursor-pointer">
@@ -125,7 +160,26 @@ export const RightSidebar = ({ selectedUnit }: RightSidebarProps) => {
         </label>
         <span className="text-sm font-semibold">Mở</span>
       </div>
-
+      <div className="mt-6 flex items-center space-x-4">
+        <span className="text-sm font-semibold">Theo hẹn giờ</span>
+        <label className="relative inline-flex items-center cursor-pointer">
+          <input
+            type="checkbox"
+            checked={unitData.isAutomatic ?? false}
+            onChange={handleToggleAutomatic}
+            disabled={!unitData.isConnected}
+            className="sr-only peer"
+          />
+          <div
+            className={`w-11 h-6 bg-gray-200 rounded-full peer-focus:outline-none peer-focus:ring-4 peer-checked:bg-green-600
+      peer-disabled:opacity-50 peer-disabled:cursor-not-allowed`}
+          />
+          <div
+            className={`absolute left-[2px] top-[2px] bg-white w-5 h-5 rounded-full transition-transform
+      peer-checked:translate-x-full peer-checked:border-white border-gray-300`}
+          />
+        </label>
+      </div>
       <div className="mt-8">
         <h4 className="text-lg font-semibold mb-2">Hẹn giờ</h4>
 
@@ -145,7 +199,8 @@ export const RightSidebar = ({ selectedUnit }: RightSidebarProps) => {
                   className="w-16 p-2 border rounded text-center"
                   placeholder="HH"
                 />
-                <small className="text-xs text-gray-500">Giờ</small> {/* Label for Hours */}
+                <small className="text-xs text-gray-500">Giờ</small>{" "}
+                {/* Label for Hours */}
               </div>
               <span>:</span>
               <div className="flex flex-col items-center">
@@ -159,7 +214,8 @@ export const RightSidebar = ({ selectedUnit }: RightSidebarProps) => {
                   className="w-16 p-2 border rounded text-center"
                   placeholder="MM"
                 />
-                <small className="text-xs text-gray-500">Phút</small> {/* Label for Minutes */}
+                <small className="text-xs text-gray-500">Phút</small>{" "}
+                {/* Label for Minutes */}
               </div>
             </div>
           </div>
@@ -179,7 +235,8 @@ export const RightSidebar = ({ selectedUnit }: RightSidebarProps) => {
                   className="w-16 p-2 border rounded text-center"
                   placeholder="HH"
                 />
-                <small className="text-xs text-gray-500">Giờ</small> {/* Label for Hours */}
+                <small className="text-xs text-gray-500">Giờ</small>{" "}
+                {/* Label for Hours */}
               </div>
               <span>:</span>
               <div className="flex flex-col items-center">
@@ -193,7 +250,8 @@ export const RightSidebar = ({ selectedUnit }: RightSidebarProps) => {
                   className="w-16 p-2 border rounded text-center"
                   placeholder="MM"
                 />
-                <small className="text-xs text-gray-500">Phút</small> {/* Label for Minutes */}
+                <small className="text-xs text-gray-500">Phút</small>{" "}
+                {/* Label for Minutes */}
               </div>
             </div>
           </div>
@@ -204,7 +262,9 @@ export const RightSidebar = ({ selectedUnit }: RightSidebarProps) => {
           size="sm"
           onClick={handleSetSchedule}
           disabled={!unitData.isConnected}
-          className={`mt-4 w-full ${!unitData.isConnected ? "opacity-50 cursor-not-allowed" : ""}`}
+          className={`mt-4 w-full ${
+            !unitData.isConnected ? "opacity-50 cursor-not-allowed" : ""
+          }`}
         >
           {unitData.isConnected ? "Lưu hẹn" : "Mất kết nối"}
         </Button>

@@ -350,7 +350,7 @@ export async function downloadCSVAudit(token: string): Promise<void> {
 export async function setCommand(
   token: string, 
   unitId: number, 
-  type: 'toggle' | 'schedule',
+  type: 'toggle' | 'schedule' | 'auto',
   payload: boolean | Schedule): Promise<void> {
   // Check if the command is a TOGGLE or SCHEDULE
   const body = JSON.stringify({

@@ -15,6 +15,8 @@ interface WebSocketContextType {
   selectedUnit: UnitStatus | null;
   setSelectedUnit: React.Dispatch<React.SetStateAction<UnitStatus | null>>;
   toggleLight: (unitId: number) => void;
+  toggleAutomatic: (unitId: number) => void;
+  disableAutomatic: (unitId: number) => void;
   sendMessage: (unitId: number, message: string) => void;
 }
 
@@ -40,6 +42,7 @@ type StatusResponse = {
   gps_lat: number;
   total_energy: number;
   toggle: number;
+  auto: number;
   hour_on: number;
   minute_on: number;
   hour_off: number;
@@ -85,6 +88,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
               ...prevState[unitId],
               isConnected: true,
               isOn: data.toggle === 1,
+              isAutomatic: data.auto === 1,
               power: data.power,
               current: data.current,
               voltage: data.voltage,
@@ -136,10 +140,30 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
     if (status) {
       setUnitStatus((prevState) => ({
         ...prevState,
-        [unitId]: { ...status, isOn: !status.isOn },
+        [unitId]: { ...status, isOn: !status.isOn, isAutomatic: false },
       }));
     }
   };
+
+  const disableAutomatic = (unitId: number) => {
+    const status = unitStatus[unitId];
+    if (status) {
+      setUnitStatus((prevState) => ({
+        ...prevState,
+        [unitId]: { ...status, isAutomatic: false },
+      }));
+    }
+  }
+
+  const toggleAutomatic = (unitId: number) => {
+    const status = unitStatus[unitId];
+    if (status) {
+      setUnitStatus((prevState) => ({
+        ...prevState,
+        [unitId]: { ...status, isAutomatic: !status.isAutomatic },
+      }));
+    }
+  }
 
   return (
     <WebSocketContext.Provider
@@ -148,6 +172,8 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
         selectedUnit,
         setSelectedUnit,
         toggleLight,
+        toggleAutomatic,
+        disableAutomatic,
         sendMessage,
       }}
     >

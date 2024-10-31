@@ -10,6 +10,7 @@ export type Unit = {
   export type UnitStatus = {
     id: number;
     isOn: boolean;
+    isAutomatic: boolean;
     isConnected: boolean;
     power: number;
     current: number;
