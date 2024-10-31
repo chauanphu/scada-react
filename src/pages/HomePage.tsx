@@ -9,7 +9,7 @@ import { getClusters } from '../lib/api';
 import { WebSocketProvider } from '../contexts/WebsocketProvider';
 import { APIProvider, useAPI } from '../contexts/APIProvider';
 import { Navbar } from '../components/NavBar';
-import NotificationCard from '../components/NotificationCard';
+// import NotificationCard from '../components/NotificationCard';
 
 export default function HomePage() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -56,7 +56,7 @@ export default function HomePage() {
           {/* Loading state for permissions */}
 
           <Navbar permissions={permissions} />
-          <NotificationCard />
+          {/* <NotificationCard /> */}
           <div className="bg-white absolute z-10 w-full lg:w-1/5 h-[40vh] lg:h-full">
             <LeftSidebar
               searchTerm={searchTerm}

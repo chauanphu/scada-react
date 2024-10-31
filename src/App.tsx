@@ -7,6 +7,7 @@ import UserPage from './pages/UserPage';
 import ClusterPage from './pages/ClusterPage';
 import ReportPage from './pages/ReportPage';
 import ChangelogPage from './pages/ChangelogPage';
+import TaskPage from './pages/TaskPage';
 
 function App() {
   return (
@@ -20,6 +21,7 @@ function App() {
           <Route path="/cluster" element={<ClusterPage />} />
           <Route path="/report" element={<ReportPage />} />
           <Route path="/changelog" element={<ChangelogPage />} /> 
+          <Route path="/task" element={<TaskPage />} />
         </Routes>
       </RootLayout>
     </Router>

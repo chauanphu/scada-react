@@ -4,6 +4,7 @@
 import { PermissionEnum } from "../components/NavBar";
 import { Cluster, ClusterFull, CreateClusterData, Schedule } from "../types/Cluster";
 import { EnergyData } from "../types/Report";
+import { Task } from "../types/Task";
 
 // export const NEXT_PUBLIC_API_URL = process.env["NEXT_PUBLIC_API_UR"];
 // export const NEXT_PUBLIC_WS_URL = process.env["NEXT_PUBLIC_WS_URL"];
@@ -100,6 +101,7 @@ export async function getUsers(token: string): Promise<User[]> {
   const data = await response.json();
   return data;
 }
+
 export async function createUser(token: string, userData: Partial<User>): Promise<User> {
   const response = await fetch(`${NEXT_PUBLIC_API_URL}/user/`, {
     method: 'POST',
@@ -370,4 +372,87 @@ export async function setCommand(
   if (!response.ok) {
     throw new Error('Failed to toggle light');
   }
+}
+
+export type PaginatedTasks = {
+  total: number;
+  page: number;
+  page_size: number;
+  items: Task[];
+};
+
+export async function getTasks(
+  token: string,
+  page: number = 1,
+  page_size: number = 10,
+  typeFilter?: string,
+  statusFilter?: string
+): Promise<PaginatedTasks> {
+  const params = new URLSearchParams({
+    page: page.toString(),
+    page_size: page_size.toString(),
+  });
+
+  if (typeFilter) {
+    params.append('type', typeFilter);
+  }
+  if (statusFilter) {
+    params.append('status', statusFilter);
+  }
+
+  const response = await fetch(`${NEXT_PUBLIC_API_URL}/tasks/?${params.toString()}`, {
+    headers: {
+      accept: 'application/json',
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch tasks');
+  }
+
+  const data = await response.json();
+  return data;
+}
+
+export async function updateTask(token: string, taskId: string, taskData: Partial<Task>): Promise<Task> {
+  const response = await fetch(`${NEXT_PUBLIC_API_URL}/tasks/${taskId}`, {
+    method: 'PATCH',
+    headers: {
+      'accept': 'application/json',
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify(taskData),
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to update task');
+  }
+
+  return response.json();
+}
+
+
+export type Assignee = {
+  id: string;
+  email: string;
+}
+
+// Get assignees /api/tasks/assignees
+export async function getAssignees(token: string): Promise<Assignee[]> {
+  const response = await fetch(`${NEXT_PUBLIC_API_URL}/tasks/assignees`, {
+    headers: {
+      'accept': 'application/json',
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch assignees');
+  }
+
+  return response.json();
 }
