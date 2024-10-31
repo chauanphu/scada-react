@@ -4,10 +4,8 @@
 
 import React, { useEffect, useState } from "react";
 import Cookies from "js-cookie";
-import { useNavigate } from "react-router-dom";
 import { Task, TaskType, TaskStatus } from "../types/Task";
 import { getTasks, updateTask, Assignee, getAssignees } from "../lib/api";
-import { Button } from "../components/ui/button";
 import { Navbar } from "../components/NavBar";
 import { useAPI } from "../contexts/APIProvider";
 
@@ -21,7 +19,6 @@ const TaskPage: React.FC = () => {
   const [typeFilter, setTypeFilter] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [assignees, setAssignees] = useState<Assignee[]>([]); // For dropdown of assignees
-  const navigate = useNavigate();
 
   const token = Cookies.get("token") || "";
   const apiContext = useAPI();
@@ -137,7 +134,7 @@ const TaskPage: React.FC = () => {
           <div className="flex space-x-4 mb-4">
             <div>
               <label className="block text-sm font-medium text-gray-700">
-                Loại công việc
+                Sự cố
               </label>
               <select
                 value={typeFilter}
@@ -223,15 +220,15 @@ const TaskPage: React.FC = () => {
                         Thiết bị
                       </th>
                       <th className="px-6 py-3 border-b-2 border-gray-300 text-left text-sm font-semibold text-gray-700">
-                        Loại công việc
+                        Sự cố
                       </th>
                       <th className="px-6 py-3 border-b-2 border-gray-300 text-left text-sm font-semibold text-gray-700">
                         Trạng thái
                       </th>
                       <th className="px-6 py-3 border-b-2 border-gray-300 text-left text-sm font-semibold text-gray-700">
-                        Người được giao
+                        Người phụ trách
                       </th>
-                      <th className="px-6 py-3 border-b-2 border-gray-300"></th>
+                      {/* Remove the last column header */}
                     </tr>
                   </thead>
                   <tbody>
@@ -258,10 +255,26 @@ const TaskPage: React.FC = () => {
                                 e.target.value as TaskStatus
                               )
                             }
-                            className="border-gray-300 rounded-md"
+                            className={`border-gray-300 rounded-md ${
+                              task.status === TaskStatus.COMPLETED
+                                ? "text-green-600"
+                                : task.status === TaskStatus.IN_PROGRESS
+                                ? "text-yellow-600"
+                                : "text-red-600"
+                            }`}
                           >
                             {Object.values(TaskStatus).map((status) => (
-                              <option key={status} value={status}>
+                              <option
+                                key={status}
+                                value={status}
+                                className={`${
+                                  status === TaskStatus.COMPLETED
+                                    ? "text-green-600"
+                                    : status === TaskStatus.IN_PROGRESS
+                                    ? "text-yellow-600"
+                                    : "text-red-600"
+                                }`}
+                              >
                                 {status}
                               </option>
                             ))}
@@ -275,7 +288,7 @@ const TaskPage: React.FC = () => {
                             }
                             className="border-gray-300 rounded-md"
                           >
-                            <option value="">Chọn người được giao</option>
+                            <option value="">Chọn người phụ trách</option>
                             {assignees.map((assignee) => (
                               <option key={assignee.id} value={assignee.id}>
                                 {assignee.email}
@@ -283,17 +296,13 @@ const TaskPage: React.FC = () => {
                             ))}
                           </select>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800">
-                          <Button onClick={() => navigate(`/tasks/${task.id}`)}>
-                            Chi tiết
-                          </Button>
-                        </td>
+                        {/* Remove the last column data */}
                       </tr>
                     ))}
                     {tasks.length === 0 && (
                       <tr>
                         <td
-                          colSpan={6}
+                          colSpan={5}
                           className="px-6 py-4 text-center text-sm text-gray-500"
                         >
                           Không có công việc nào.
