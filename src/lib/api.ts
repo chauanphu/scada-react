@@ -308,7 +308,9 @@ export async function getAuditLogs(token: string, page: number = 1, page_size: n
     });
 
     if (!response.ok) {
-      throw new Error('Failed to fetch audit logs');
+      const error = new Error('Failed to fetch audit logs');
+      error.name = 'EmptyResponseError';
+      throw error;
     }
 
     return response.json();

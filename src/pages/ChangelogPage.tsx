@@ -33,9 +33,12 @@ const ChangelogPage: React.FC = () => {
         const data: PaginatedAuditLogs = await getAuditLogs(token, currentPage, entriesPerPage);
         setTotalPages(Math.ceil(data.total / entriesPerPage));
         setAuditLogs(data.items);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (err: any) {
-        setError(err.message || 'Đã xảy ra lỗi không mong muốn.');
+        if (err.message === 'Failed to fetch audit logs' && err.name === "EmptyResponseError") {
+          setAuditLogs([]);
+        } else {
+          setError(err.message || 'Đã xảy ra lỗi không mong muốn.');
+        }
       } finally {
         setLoading(false);
       }
@@ -199,7 +202,7 @@ const ChangelogPage: React.FC = () => {
                           colSpan={3}
                           className="px-6 py-4 text-center text-sm text-gray-500"
                         >
-                          Không có nhật ký kiểm toán nào có sẵn.
+                          Không có nhật ký thay đổi
                         </td>
                       </tr>
                     )}
