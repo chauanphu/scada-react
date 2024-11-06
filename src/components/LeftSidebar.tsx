@@ -20,7 +20,7 @@ export const LeftSidebar = ({
   filteredClusters, setSelectedUnit,
 }: LeftSidebarProps) => {
   const socketContext = useWebSocket();
-  const unitStatus = socketContext?.unitStatus || {};
+  const unitStatus = socketContext?.unitStatuses || {};
   const [isErrorDialogOpen, setIsErrorDialogOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 

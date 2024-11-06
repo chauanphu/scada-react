@@ -12,7 +12,7 @@ interface RightSidebarProps {
 export const RightSidebar = ({ selectedUnit }: RightSidebarProps) => {
   const socketContext = useWebSocket();
   const unitStatus = useMemo(() => {
-    return socketContext?.unitStatus || {};
+    return socketContext?.unitStatuses || {};
   }, [socketContext]);
 
   const toggleLight = socketContext?.toggleLight || (() => {});
@@ -74,14 +74,11 @@ export const RightSidebar = ({ selectedUnit }: RightSidebarProps) => {
   const handleToggle = () => {
     if (unitData.isConnected && selectedUnit) {
       toggleLight(selectedUnit.id);
-      setCommand(token, selectedUnit.id, "auto", false);
-      setCommand(token, selectedUnit.id, "toggle", !unitData.isOn);
     }
   };
 
   const handleToggleAutomatic = () => {
     if (unitData.isConnected && selectedUnit) {
-      setCommand(token, selectedUnit.id, "auto", !unitData.isAutomatic);
       toggleAuto(selectedUnit.id);
     }
   };

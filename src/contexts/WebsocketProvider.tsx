@@ -11,7 +11,8 @@ import { getClusters, NEXT_PUBLIC_WS_URL } from "../lib/api";
 import { Cluster, UnitStatus } from "../types/Cluster";
 
 interface WebSocketContextType {
-  unitStatus: Record<number, UnitStatus>;
+  clusters: Cluster[];
+  unitStatuses: Record<number, UnitStatus>;
   selectedUnit: UnitStatus | null;
   setSelectedUnit: React.Dispatch<React.SetStateAction<UnitStatus | null>>;
   toggleLight: (unitId: number) => void;
@@ -61,7 +62,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
   // }, [apiContext?.clusters]);
 
   const [sockets, setSockets] = useState<Map<number, WebSocket>>(new Map());
-  const [unitStatus, setUnitStatus] = useState<Record<number, UnitStatus>>({});
+  const [unitStatuses, setUnitStatus] = useState<Record<number, UnitStatus>>({});
   const [selectedUnit, setSelectedUnit] = useState<UnitStatus | null>(null);
 
   useEffect(() => {
@@ -136,7 +137,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
   };
 
   const toggleLight = (unitId: number) => {
-    const status = unitStatus[unitId];
+    const status = unitStatuses[unitId];
     if (status) {
       setUnitStatus((prevState) => ({
         ...prevState,
@@ -146,7 +147,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
   };
 
   const disableAutomatic = (unitId: number) => {
-    const status = unitStatus[unitId];
+    const status = unitStatuses[unitId];
     if (status) {
       setUnitStatus((prevState) => ({
         ...prevState,
@@ -156,7 +157,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
   }
 
   const toggleAutomatic = (unitId: number) => {
-    const status = unitStatus[unitId];
+    const status = unitStatuses[unitId];
     if (status) {
       setUnitStatus((prevState) => ({
         ...prevState,
@@ -168,7 +169,8 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
   return (
     <WebSocketContext.Provider
       value={{
-        unitStatus,
+        clusters,
+        unitStatuses,
         selectedUnit,
         setSelectedUnit,
         toggleLight,

@@ -21,7 +21,7 @@ export const Map = ({
 }: MapProps) => {
   const mapRef = useRef<L.Map | null>(null);
   const socketContext = useWebSocket();
-  const unitStatus = socketContext?.unitStatus || {};
+  const unitStatus = socketContext?.unitStatuses || {};
 
   useEffect(() => {
     if (L && mapRef.current && selectedUnit) {
