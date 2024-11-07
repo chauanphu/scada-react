@@ -248,20 +248,29 @@ export enum View {
   YEARLY = 'yearly',
 }
 
-// GET enery data
-export async function getEnergyData(token: string, view: View): Promise<EnergyData[]> {
-  const response = await fetch(`${NEXT_PUBLIC_API_URL}/status/enery?view=${view}`, {
-    headers: {
-      'accept': 'application/json',
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`,
-    },
-  });
-  if (response.status !== 200) {
-    throw new Error('Failed to fetch energy data');
+// GET energy data
+export async function getEnergyData(token: string, unit_id: number, view: View): Promise<EnergyData[]> {
+  try {
+    const response = await fetch(`${NEXT_PUBLIC_API_URL}/status/energy/${unit_id}?view=${view}`, {
+      headers: {
+        'accept': 'application/json',
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+    // Handle empty response
+    if (response.status == 404) {
+      return [];
+    }
+    if (response.status !== 200) {
+      throw new Error('Failed to fetch energy data');
+    }
+    return response.json();
+  } catch (error) {
+    console.error('Error fetching data:', error);
+    // Handle the error as needed
+    return [];
   }
-
-  return response.json();
 }
 
 export async function getRoles(token: string): Promise<Role[]> {

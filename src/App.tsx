@@ -19,7 +19,7 @@ function App() {
           {/* Add other routes */}
           <Route path="/user" element={<UserPage />} />
           <Route path="/cluster" element={<ClusterPage />} />
-          <Route path="/report" element={<ReportPage />} />
+          <Route path="/report/:unitId?" element={<ReportPage />} />
           <Route path="/changelog" element={<ChangelogPage />} /> 
           <Route path="/task" element={<TaskPage />} />
         </Routes>
