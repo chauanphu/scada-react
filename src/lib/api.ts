@@ -249,15 +249,27 @@ export enum View {
 }
 
 // GET energy data
-export async function getEnergyData(token: string, unit_id: number, view: View): Promise<EnergyData[]> {
+export async function getEnergyData(
+  token: string, 
+  unit_id: number, 
+  view: View,
+  start_date?: string,
+  end_date?: string
+): Promise<EnergyData[]> {
   try {
-    const response = await fetch(`${NEXT_PUBLIC_API_URL}/status/energy/${unit_id}?view=${view}`, {
-      headers: {
-        'accept': 'application/json',
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-    });
+    const params = new URLSearchParams({ view });
+    if (start_date) params.append('start_date', start_date);
+    if (end_date) params.append('end_date', end_date);
+    const response = await fetch(
+      `${NEXT_PUBLIC_API_URL}/status/energy/${unit_id}?${params.toString()}`, 
+      {
+        headers: {
+          'accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      }
+    );
     // Handle empty response
     if (response.status == 404) {
       return [];
