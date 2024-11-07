@@ -15,7 +15,7 @@ export const RightSidebar = ({ selectedUnit }: RightSidebarProps) => {
     return socketContext?.unitStatuses || {};
   }, [socketContext]);
 
-  const toggleLight = socketContext?.toggleLight || (() => {});
+  const toggleLight = socketContext?.toggleLight || (async () => {});
   const toggleAuto = socketContext?.toggleAutomatic || (() => {});
 
   const [unitData, setUnitData] = useState({
@@ -71,15 +71,16 @@ export const RightSidebar = ({ selectedUnit }: RightSidebarProps) => {
     }
   };
 
-  const handleToggle = () => {
+  const handleToggle = async () => {
     if (unitData.isConnected && selectedUnit) {
-      toggleLight(selectedUnit.id);
+      await toggleLight(selectedUnit.id);
     }
   };
 
   const handleToggleAutomatic = () => {
     if (unitData.isConnected && selectedUnit) {
       toggleAuto(selectedUnit.id);
+      setCommand(token, selectedUnit.id, "auto", !unitData.isAutomatic);
     }
   };
   if (!selectedUnit) {

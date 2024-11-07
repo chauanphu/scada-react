@@ -69,15 +69,14 @@ export const APIProvider: React.FC<APIProviderProps> = ({ children }) => {
             if (storedToken && await checkLogin(storedToken)) {
                 setToken(storedToken);
                 setIsAuthenticated(true);
-                //  fetchClusters(storedToken);
-                fetchPermissions(storedToken);  // Fetch permissions
+                fetchPermissions(storedToken);
             } else {
                 setToken(null);
                 setIsAuthenticated(false);
                 navigate("/login");
             }
         };
-
+    
         checkUserAuth();
     }, [navigate]);
 

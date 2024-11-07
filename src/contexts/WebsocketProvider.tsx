@@ -1,4 +1,3 @@
-// app/contexts/WebsocketProvider.tsx
 import React, {
   createContext,
   useContext,
@@ -7,15 +6,15 @@ import React, {
   ReactNode,
 } from "react";
 import { useAPI } from "./APIProvider";
-import { getClusters, NEXT_PUBLIC_WS_URL } from "../lib/api";
+import { getClusters, NEXT_PUBLIC_WS_URL, setCommand } from "../lib/api";
 import { Cluster, UnitStatus } from "../types/Cluster";
 
 interface WebSocketContextType {
   clusters: Cluster[];
-  unitStatuses: Record<number, UnitStatus>;
+  unitStatuses: { [key: number]: UnitStatus };
   selectedUnit: UnitStatus | null;
   setSelectedUnit: React.Dispatch<React.SetStateAction<UnitStatus | null>>;
-  toggleLight: (unitId: number) => void;
+  toggleLight: (unitId: number) => Promise<void>;
   toggleAutomatic: (unitId: number) => void;
   disableAutomatic: (unitId: number) => void;
   sendMessage: (unitId: number, message: string) => void;
@@ -54,15 +53,11 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
   children,
 }) => {
   const apiContext = useAPI();
-  const token = apiContext?.token;
+  const token = apiContext?.token || "";
   const isAuthenticated = apiContext?.isAuthenticated;
   const [clusters, setClusters] = useState<Cluster[]>([]);
-  // const clusters = useMemo(() => {
-  //   return apiContext?.clusters || [];
-  // }, [apiContext?.clusters]);
-
   const [sockets, setSockets] = useState<Map<number, WebSocket>>(new Map());
-  const [unitStatuses, setUnitStatus] = useState<Record<number, UnitStatus>>({});
+  const [unitStatuses, setUnitStatus] = useState<{ [key: number]: UnitStatus }>({});
   const [selectedUnit, setSelectedUnit] = useState<UnitStatus | null>(null);
 
   useEffect(() => {
@@ -136,9 +131,10 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
     }
   };
 
-  const toggleLight = (unitId: number) => {
+  const toggleLight = async (unitId: number) => {
     const status = unitStatuses[unitId];
     if (status) {
+      await setCommand(token, unitId, "toggle", !status.isOn);
       setUnitStatus((prevState) => ({
         ...prevState,
         [unitId]: { ...status, isOn: !status.isOn, isAutomatic: false },
@@ -154,7 +150,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
         [unitId]: { ...status, isAutomatic: false },
       }));
     }
-  }
+  };
 
   const toggleAutomatic = (unitId: number) => {
     const status = unitStatuses[unitId];
@@ -164,7 +160,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
         [unitId]: { ...status, isAutomatic: !status.isAutomatic },
       }));
     }
-  }
+  };
 
   return (
     <WebSocketContext.Provider
