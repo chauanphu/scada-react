@@ -57,6 +57,10 @@ export async function getToken(username: string, password: string): Promise<stri
     }).toString(),
   });
 
+  if (response.status === 401) {
+    throw new Error('Mật khẩu hoặc tài khoản không đúng. Vui lòng thử lại.');
+  }
+
   if (!response.ok) {
     throw new Error('Invalid credentials');
   }

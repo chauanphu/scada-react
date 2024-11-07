@@ -23,8 +23,8 @@ export default function LoginPage() {
       // Set token to the cookie with expiration time and redirect to the dashboard /
       Cookies.set('token', token, { expires: 7 });
       navigate('/');
-    } catch {
-      setError('An unexpected error occurred. Please try again.');
+    } catch (error: any) {
+      setError(error.message);
     } finally {
       setLoading(false);
     }

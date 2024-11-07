@@ -123,7 +123,7 @@ export default function UserManagement() {
     }
 
     if (newUser.password !== newUser.confirmPassword) {
-      setError("Mật khẩu không khớp.");
+      setError("Mật khẩu không khớp. Vui lòng thử lại.");
       return;
     }
     
