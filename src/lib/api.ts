@@ -458,3 +458,19 @@ export async function getAssignees(token: string): Promise<Assignee[]> {
 
   return response.json();
 }
+
+export async function changePassword(token: string, targetId: number, newPassword: string): Promise<void> {
+  const response = await fetch(`${NEXT_PUBLIC_API_URL}/user/change-password/${targetId}`, {
+    method: 'PUT',
+    headers: {
+      'accept': 'application/json',
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify({ new_password: newPassword }),
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to change password');
+  }
+}

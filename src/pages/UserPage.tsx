@@ -2,7 +2,7 @@
 
 import { useEffect, useState, Fragment } from "react";
 import { Dialog, Transition, TransitionChild } from "@headlessui/react";
-import { createUser, deleteUser, getRoles, getUsers, Role, updateUser } from "../lib/api";
+import { createUser, deleteUser, getRoles, getUsers, Role, updateUser, changePassword } from "../lib/api";
 import Cookies from 'js-cookie';
 import { useAPI } from "../contexts/APIProvider";
 import { Navbar } from "../components/NavBar";
@@ -41,6 +41,12 @@ type CreateUserRequest = {
   password: string;
 };
 
+// Kiểu dữ liệu cho biểu mẫu thay đổi mật khẩu
+type ChangePasswordForm = {
+  newPassword: string;
+  confirmPassword: string;
+};
+
 export default function UserManagement() {
   const [users, setUsers] = useState<User[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
@@ -57,6 +63,12 @@ export default function UserManagement() {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [passwordForm, setPasswordForm] = useState<ChangePasswordForm>({
+    newPassword: "",
+    confirmPassword: "",
+  });
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState<boolean>(false);
+  const [targetUserId, setTargetUserId] = useState<number | null>(null);
 
   useEffect(() => {
     fetchUsers();
@@ -106,13 +118,17 @@ export default function UserManagement() {
       !newUser.password ||
       !newUser.confirmPassword
     ) {
-      console.log(newUser)
       setError("Vui lòng điền đầy đủ các trường.");
       return;
     }
 
     if (newUser.password !== newUser.confirmPassword) {
       setError("Mật khẩu không khớp.");
+      return;
+    }
+    
+    if (newUser.password.length < 6) {
+      setError("Mật khẩu phải có ít nhất 6 ký tự.");
       return;
     }
 
@@ -182,6 +198,35 @@ export default function UserManagement() {
       const token = Cookies.get('token') || '';
       await deleteUser(token, userId);
       setUsers(users.filter((user) => user.user_id !== userId));
+    } catch (err: any) { //eslint-disable-line @typescript-eslint/no-explicit-any
+      console.error(err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Xử lý thay đổi mật khẩu
+  const handleChangePassword = async () => {
+    if (!targetUserId) return;
+
+    if (!passwordForm.newPassword || !passwordForm.confirmPassword) {
+      setError("Vui lòng điền đầy đủ các trường.");
+      return;
+    }
+
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setError("Mật khẩu không khớp.");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+    try {
+      const token = Cookies.get('token') || '';
+      await changePassword(token, targetUserId, passwordForm.newPassword);
+      setPasswordForm({ newPassword: "", confirmPassword: "" });
+      setIsPasswordModalOpen(false);
     } catch (err: any) { //eslint-disable-line @typescript-eslint/no-explicit-any
       console.error(err);
       setError(err.message);
@@ -383,6 +428,106 @@ export default function UserManagement() {
             </Dialog>
           </Transition>
 
+          {/* Modal Thay Đổi Mật Khẩu */}
+          <Transition appear show={isPasswordModalOpen} as={Fragment}>
+            <Dialog as="div" className="relative z-10" onClose={() => setIsPasswordModalOpen(false)}>
+              <TransitionChild
+                as={Fragment}
+                enter="ease-out duration-300"
+                enterFrom="opacity-0"
+                enterTo="opacity-100"
+                leave="ease-in duration-200"
+                leaveFrom="opacity-100"
+                leaveTo="opacity-0"
+              >
+                <div className="fixed inset-0 bg-black bg-opacity-25" />
+              </TransitionChild>
+
+              <div className="fixed inset-0 overflow-y-auto">
+                <div className="flex min-h-full items-center justify-center p-4 text-center">
+                  <TransitionChild
+                    as={Fragment}
+                    enter="ease-out duration-300"
+                    enterFrom="opacity-0 scale-95"
+                    enterTo="opacity-100 scale-100"
+                    leave="ease-in duration-200"
+                    leaveFrom="opacity-100 scale-100"
+                    leaveTo="opacity-0 scale-95"
+                  >
+                    <Dialog.Panel className="w-full max-w-lg transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
+                      <Dialog.Title as="h3" className="text-2xl font-bold text-gray-900">
+                        Thay Đổi Mật Khẩu
+                      </Dialog.Title>
+                      <div className="mt-4">
+                        <form
+                          onSubmit={(e) => {
+                            e.preventDefault();
+                            handleChangePassword();
+                          }}
+                        >
+                          {/* Mật Khẩu Mới */}
+                          <div className="mb-4">
+                            <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="newPassword">
+                              Mật Khẩu Mới
+                            </label>
+                            <input
+                              type="password"
+                              id="newPassword"
+                              value={passwordForm.newPassword}
+                              onChange={(e) =>
+                                setPasswordForm({ ...passwordForm, newPassword: e.target.value })
+                              }
+                              className="shadow-sm appearance-none border rounded w-full py-2 px-3 text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              placeholder="Nhập mật khẩu mới"
+                              required
+                            />
+                          </div>
+
+                          {/* Xác Nhận Mật Khẩu */}
+                          <div className="mb-6">
+                            <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="confirmPassword">
+                              Xác Nhận Mật Khẩu
+                            </label>
+                            <input
+                              type="password"
+                              id="confirmPassword"
+                              value={passwordForm.confirmPassword}
+                              onChange={(e) =>
+                                setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })
+                              }
+                              className="shadow-sm appearance-none border rounded w-full py-2 px-3 text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              placeholder="Xác nhận mật khẩu"
+                              required
+                            />
+                          </div>
+
+                          {/* Nút Gửi */}
+                          <div className="flex justify-end">
+                            <button
+                              type="button"
+                              onClick={() => setIsPasswordModalOpen(false)}
+                              className="bg-gray-500 text-white px-4 py-2 rounded mr-2 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400"
+                              disabled={loading}
+                            >
+                              Hủy
+                            </button>
+                            <button
+                              type="submit"
+                              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              disabled={loading}
+                            >
+                              {loading ? "Đang thay đổi..." : "Thay Đổi"}
+                            </button>
+                          </div>
+                        </form>
+                      </div>
+                    </Dialog.Panel>
+                  </TransitionChild>
+                </div>
+              </div>
+            </Dialog>
+          </Transition>
+
           {/* Bảng Người Dùng */}
           <div className="overflow-x-auto bg-white shadow rounded-lg">
             <table className="min-w-full divide-y divide-gray-200">
@@ -500,6 +645,15 @@ export default function UserManagement() {
                             className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
                           >
                             Xóa
+                          </button>
+                          <button
+                            onClick={() => {
+                              setTargetUserId(user.user_id);
+                              setIsPasswordModalOpen(true);
+                            }}
+                            className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          >
+                            Đổi Mật Khẩu
                           </button>
                         </div>
                       )}
