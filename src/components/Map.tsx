@@ -21,7 +21,7 @@ export const Map = ({
 }: MapProps) => {
   const mapRef = useRef<L.Map | null>(null);
   const socketContext = useWebSocket();
-  const unitStatus = socketContext?.unitStatuses || {};
+  const unitStatus = socketContext?.unitStatus || {};
 
   useEffect(() => {
     if (L && mapRef.current && selectedUnit) {
@@ -68,11 +68,11 @@ export const Map = ({
       mac: unit.mac || "Unknown",
     };
 
-    const icon = GetIcon(25, status.isConnected, status.isOn, unitData.name);
+    const icon = GetIcon(25, status.is_connected, status.is_on, unitData.name);
 
     return (
       <Marker
-        key={unit.id}
+        key={unit._id}
         position={[unitData.latitude, unitData.longitude] as LatLngExpression}
         icon={icon}
         eventHandlers={{
@@ -93,7 +93,7 @@ export const Map = ({
         <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
         {selectedUnit &&
           unitStatus &&
-          getMarker(selectedUnit, unitStatus[selectedUnit.id])}
+          getMarker(selectedUnit, unitStatus[selectedUnit._id])}
       </MapContainer>
       <RightSidebar selectedUnit={selectedUnit} />
     </div>

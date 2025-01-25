@@ -1,0 +1,1948 @@
+{
+    "openapi": "3.1.0",
+    "info": {
+      "title": "SCADA Traffic Light System",
+      "description": "A SCADA system for controlling traffic lights",
+      "version": "0.1.0"
+    },
+    "paths": {
+      "/api/tenant/": {
+        "get": {
+          "tags": [
+            "tenants"
+          ],
+          "summary": "Get",
+          "operationId": "get_api_tenant__get",
+          "responses": {
+            "200": {
+              "description": "Successful Response",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "items": {
+                      "$ref": "#/components/schemas/Tenant"
+                    },
+                    "type": "array",
+                    "title": "Response Get Api Tenant  Get"
+                  }
+                }
+              }
+            }
+          },
+          "security": [
+            {
+              "OAuth2PasswordBearer": []
+            }
+          ]
+        },
+        "post": {
+          "tags": [
+            "tenants"
+          ],
+          "summary": "Post",
+          "operationId": "post_api_tenant__post",
+          "requestBody": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TenantCreate"
+                }
+              }
+            },
+            "required": true
+          },
+          "responses": {
+            "200": {
+              "description": "Successful Response",
+              "content": {
+                "application/json": {
+                  "schema": {
+  
+                  }
+                }
+              }
+            },
+            "422": {
+              "description": "Validation Error",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              }
+            }
+          },
+          "security": [
+            {
+              "OAuth2PasswordBearer": []
+            }
+          ]
+        }
+      },
+      "/api/tenant/{tenant_id}": {
+        "put": {
+          "tags": [
+            "tenants"
+          ],
+          "summary": "Put",
+          "operationId": "put_api_tenant__tenant_id__put",
+          "security": [
+            {
+              "OAuth2PasswordBearer": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "tenant_id",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "title": "Tenant Id"
+              }
+            }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TenantCreate"
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "Successful Response",
+              "content": {
+                "application/json": {
+                  "schema": {
+  
+                  }
+                }
+              }
+            },
+            "422": {
+              "description": "Validation Error",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "delete": {
+          "tags": [
+            "tenants"
+          ],
+          "summary": "Delete",
+          "operationId": "delete_api_tenant__tenant_id__delete",
+          "security": [
+            {
+              "OAuth2PasswordBearer": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "tenant_id",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "title": "Tenant Id"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Successful Response",
+              "content": {
+                "application/json": {
+                  "schema": {
+  
+                  }
+                }
+              }
+            },
+            "422": {
+              "description": "Validation Error",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/api/auth/data": {
+        "get": {
+          "tags": [
+            "auth"
+          ],
+          "summary": "Get Data",
+          "operationId": "get_data_api_auth_data_get",
+          "responses": {
+            "200": {
+              "description": "Successful Response",
+              "content": {
+                "application/json": {
+                  "schema": {
+  
+                  }
+                }
+              }
+            }
+          },
+          "security": [
+            {
+              "OAuth2PasswordBearer": []
+            }
+          ]
+        }
+      },
+      "/api/auth/token": {
+        "post": {
+          "tags": [
+            "auth"
+          ],
+          "summary": "Login For Access Token",
+          "operationId": "login_for_access_token_api_auth_token_post",
+          "requestBody": {
+            "content": {
+              "application/x-www-form-urlencoded": {
+                "schema": {
+                  "$ref": "#/components/schemas/Body_login_for_access_token_api_auth_token_post"
+                }
+              }
+            },
+            "required": true
+          },
+          "responses": {
+            "200": {
+              "description": "Successful Response",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Token"
+                  }
+                }
+              }
+            },
+            "422": {
+              "description": "Validation Error",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/api/auth/refresh": {
+        "post": {
+          "tags": [
+            "auth"
+          ],
+          "summary": "Refresh Access Token",
+          "operationId": "refresh_access_token_api_auth_refresh_post",
+          "responses": {
+            "200": {
+              "description": "Successful Response",
+              "content": {
+                "application/json": {
+                  "schema": {
+  
+                  }
+                }
+              }
+            }
+          },
+          "security": [
+            {
+              "OAuth2PasswordBearer": []
+            }
+          ]
+        }
+      },
+      "/api/audit/": {
+        "get": {
+          "tags": [
+            "audit"
+          ],
+          "summary": "Get Filtered Audit Logs",
+          "operationId": "get_filtered_audit_logs_api_audit__get",
+          "security": [
+            {
+              "OAuth2PasswordBearer": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "username",
+              "in": "query",
+              "required": false,
+              "schema": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Username"
+              }
+            },
+            {
+              "name": "action",
+              "in": "query",
+              "required": false,
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/Action"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Action"
+              }
+            },
+            {
+              "name": "resource",
+              "in": "query",
+              "required": false,
+              "schema": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Resource"
+              }
+            },
+            {
+              "name": "start",
+              "in": "query",
+              "required": false,
+              "schema": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Start"
+              },
+              "example": "2022-01-01T00:00:00"
+            },
+            {
+              "name": "end",
+              "in": "query",
+              "required": false,
+              "schema": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "End"
+              },
+              "example": "2022-12-31T23:59:59"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Successful Response",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/AuditLog"
+                    },
+                    "title": "Response Get Filtered Audit Logs Api Audit  Get"
+                  }
+                }
+              }
+            },
+            "422": {
+              "description": "Validation Error",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/api/users/": {
+        "get": {
+          "tags": [
+            "users",
+            "tenants"
+          ],
+          "summary": "Get Users",
+          "operationId": "get_users_api_users__get",
+          "responses": {
+            "200": {
+              "description": "Successful Response",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "items": {
+                      "$ref": "#/components/schemas/User"
+                    },
+                    "type": "array",
+                    "title": "Response Get Users Api Users  Get"
+                  }
+                }
+              }
+            }
+          },
+          "security": [
+            {
+              "OAuth2PasswordBearer": []
+            }
+          ]
+        },
+        "post": {
+          "tags": [
+            "users",
+            "tenants"
+          ],
+          "summary": "Create New User",
+          "operationId": "create_new_user_api_users__post",
+          "requestBody": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountCreate"
+                }
+              }
+            },
+            "required": true
+          },
+          "responses": {
+            "200": {
+              "description": "Successful Response",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/User"
+                  }
+                }
+              }
+            },
+            "422": {
+              "description": "Validation Error",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              }
+            }
+          },
+          "security": [
+            {
+              "OAuth2PasswordBearer": []
+            }
+          ]
+        }
+      },
+      "/api/users/{user_id}": {
+        "put": {
+          "tags": [
+            "users",
+            "tenants"
+          ],
+          "summary": "Put User",
+          "operationId": "put_user_api_users__user_id__put",
+          "security": [
+            {
+              "OAuth2PasswordBearer": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "user_id",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "title": "User Id"
+              }
+            }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountEdit"
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "Successful Response",
+              "content": {
+                "application/json": {
+                  "schema": {
+  
+                  }
+                }
+              }
+            },
+            "422": {
+              "description": "Validation Error",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "delete": {
+          "tags": [
+            "users",
+            "tenants"
+          ],
+          "summary": "Delete",
+          "operationId": "delete_api_users__user_id__delete",
+          "security": [
+            {
+              "OAuth2PasswordBearer": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "user_id",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "title": "User Id"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Successful Response",
+              "content": {
+                "application/json": {
+                  "schema": {
+  
+                  }
+                }
+              }
+            },
+            "422": {
+              "description": "Validation Error",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/api/devices/": {
+        "get": {
+          "tags": [
+            "devices"
+          ],
+          "summary": "Get Devices",
+          "operationId": "get_devices_api_devices__get",
+          "responses": {
+            "200": {
+              "description": "Successful Response",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "items": {
+                      "$ref": "#/components/schemas/Device"
+                    },
+                    "type": "array",
+                    "title": "Response Get Devices Api Devices  Get"
+                  }
+                }
+              }
+            }
+          },
+          "security": [
+            {
+              "OAuth2PasswordBearer": []
+            }
+          ]
+        },
+        "post": {
+          "tags": [
+            "devices"
+          ],
+          "summary": "Create New Device",
+          "operationId": "create_new_device_api_devices__post",
+          "requestBody": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceCreate"
+                }
+              }
+            },
+            "required": true
+          },
+          "responses": {
+            "200": {
+              "description": "Successful Response",
+              "content": {
+                "application/json": {
+                  "schema": {
+  
+                  }
+                }
+              }
+            },
+            "422": {
+              "description": "Validation Error",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              }
+            }
+          },
+          "security": [
+            {
+              "OAuth2PasswordBearer": []
+            }
+          ]
+        }
+      },
+      "/api/devices/{device_id}": {
+        "put": {
+          "tags": [
+            "devices"
+          ],
+          "summary": "Put Device",
+          "operationId": "put_device_api_devices__device_id__put",
+          "security": [
+            {
+              "OAuth2PasswordBearer": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "device_id",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "title": "Device Id"
+              }
+            }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceEdit"
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "Successful Response",
+              "content": {
+                "application/json": {
+                  "schema": {
+  
+                  }
+                }
+              }
+            },
+            "422": {
+              "description": "Validation Error",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "delete": {
+          "tags": [
+            "devices"
+          ],
+          "summary": "Delete",
+          "operationId": "delete_api_devices__device_id__delete",
+          "security": [
+            {
+              "OAuth2PasswordBearer": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "device_id",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "title": "Device Id"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Successful Response",
+              "content": {
+                "application/json": {
+                  "schema": {
+  
+                  }
+                }
+              }
+            },
+            "422": {
+              "description": "Validation Error",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/api/devices/toggle/{device_id}": {
+        "put": {
+          "tags": [
+            "devices"
+          ],
+          "summary": "Toggle",
+          "operationId": "toggle_api_devices_toggle__device_id__put",
+          "security": [
+            {
+              "OAuth2PasswordBearer": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "device_id",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "title": "Device Id"
+              }
+            },
+            {
+              "name": "value",
+              "in": "query",
+              "required": true,
+              "schema": {
+                "type": "boolean",
+                "title": "Value"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Successful Response",
+              "content": {
+                "application/json": {
+                  "schema": {
+  
+                  }
+                }
+              }
+            },
+            "422": {
+              "description": "Validation Error",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/api/devices/auto/{device_id}": {
+        "put": {
+          "tags": [
+            "devices"
+          ],
+          "summary": "Auto",
+          "operationId": "auto_api_devices_auto__device_id__put",
+          "security": [
+            {
+              "OAuth2PasswordBearer": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "device_id",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "title": "Device Id"
+              }
+            },
+            {
+              "name": "value",
+              "in": "query",
+              "required": true,
+              "schema": {
+                "type": "boolean",
+                "title": "Value"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Successful Response",
+              "content": {
+                "application/json": {
+                  "schema": {
+  
+                  }
+                }
+              }
+            },
+            "422": {
+              "description": "Validation Error",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/api/devices/schedule/{device_id}": {
+        "put": {
+          "tags": [
+            "devices"
+          ],
+          "summary": "Schedule",
+          "operationId": "schedule_api_devices_schedule__device_id__put",
+          "security": [
+            {
+              "OAuth2PasswordBearer": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "device_id",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "title": "Device Id"
+              }
+            }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Schedule"
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "Successful Response",
+              "content": {
+                "application/json": {
+                  "schema": {
+  
+                  }
+                }
+              }
+            },
+            "422": {
+              "description": "Validation Error",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/api/report/": {
+        "get": {
+          "tags": [
+            "report"
+          ],
+          "summary": "Get Energy Report",
+          "description": "Flexible endpoint to query energy consumption report with time range and aggregation level.",
+          "operationId": "get_energy_report_api_report__get",
+          "security": [
+            {
+              "OAuth2PasswordBearer": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "device_id",
+              "in": "query",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "title": "Device Id"
+              }
+            },
+            {
+              "name": "start_date",
+              "in": "query",
+              "required": false,
+              "schema": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Start Date"
+              },
+              "example": "2023-07-01T00:00:00Z"
+            },
+            {
+              "name": "end_date",
+              "in": "query",
+              "required": false,
+              "schema": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "End Date"
+              },
+              "example": "2023-12-31T23:59:59Z"
+            },
+            {
+              "name": "aggregation",
+              "in": "query",
+              "required": false,
+              "schema": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^(monthly|daily|hourly)$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Aggregation level: monthly, daily, or hourly",
+                "default": "hourly",
+                "title": "Aggregation"
+              },
+              "description": "Aggregation level: monthly, daily, or hourly"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Successful Response",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/EnergyReportResponse"
+                    },
+                    "title": "Response Get Energy Report Api Report  Get"
+                  }
+                }
+              }
+            },
+            "422": {
+              "description": "Validation Error",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/api/firmware/upload/": {
+        "post": {
+          "tags": [
+            "firmware"
+          ],
+          "summary": "Upload Firmware",
+          "operationId": "upload_firmware_api_firmware_upload__post",
+          "security": [
+            {
+              "OAuth2PasswordBearer": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "version",
+              "in": "query",
+              "required": false,
+              "schema": {
+                "type": "string",
+                "default": "0.1.0",
+                "title": "Version"
+              }
+            }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "multipart/form-data": {
+                "schema": {
+                  "$ref": "#/components/schemas/Body_upload_firmware_api_firmware_upload__post"
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "Successful Response",
+              "content": {
+                "application/json": {
+                  "schema": {
+  
+                  }
+                }
+              }
+            },
+            "422": {
+              "description": "Validation Error",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/api/firmware/latest/": {
+        "get": {
+          "tags": [
+            "firmware"
+          ],
+          "summary": "Get Latest",
+          "operationId": "get_latest_api_firmware_latest__get",
+          "responses": {
+            "200": {
+              "description": "Successful Response",
+              "content": {
+                "application/json": {
+                  "schema": {
+  
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/api/firmware/update/{device_id}": {
+        "put": {
+          "tags": [
+            "firmware"
+          ],
+          "summary": "Update Device",
+          "operationId": "update_device_api_firmware_update__device_id__put",
+          "security": [
+            {
+              "OAuth2PasswordBearer": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "device_id",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "title": "Device Id"
+              }
+            },
+            {
+              "name": "version",
+              "in": "query",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "title": "Version"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Successful Response",
+              "content": {
+                "application/json": {
+                  "schema": {
+  
+                  }
+                }
+              }
+            },
+            "422": {
+              "description": "Validation Error",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/api/firmware/update/": {
+        "put": {
+          "tags": [
+            "firmware"
+          ],
+          "summary": "Mass Update Devices",
+          "operationId": "mass_update_devices_api_firmware_update__put",
+          "security": [
+            {
+              "OAuth2PasswordBearer": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "version",
+              "in": "query",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "title": "Version"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Successful Response",
+              "content": {
+                "application/json": {
+                  "schema": {
+  
+                  }
+                }
+              }
+            },
+            "422": {
+              "description": "Validation Error",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "components": {
+      "schemas": {
+        "AccountCreate": {
+          "properties": {
+            "username": {
+              "type": "string",
+              "title": "Username"
+            },
+            "email": {
+              "type": "string",
+              "format": "email",
+              "title": "Email"
+            },
+            "role": {
+              "$ref": "#/components/schemas/Role"
+            },
+            "disabled": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Disabled",
+              "default": false
+            },
+            "password": {
+              "type": "string",
+              "title": "Password"
+            },
+            "tenant_id": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Tenant Id"
+            }
+          },
+          "type": "object",
+          "title": "AccountCreate"
+        },
+        "AccountEdit": {
+          "properties": {
+            "username": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Username"
+            },
+            "email": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "email"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Email"
+            },
+            "role": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/Role"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "disabled": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Disabled",
+              "default": false
+            },
+            "tenant_id": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Tenant Id"
+            }
+          },
+          "type": "object",
+          "title": "AccountEdit"
+        },
+        "Action": {
+          "type": "string",
+          "enum": [
+            "đăng nhập",
+            "đăng xuất",
+            "đọc",
+            "thêm",
+            "xóa",
+            "cập nhật",
+            "điều khiển",
+            "theo dõi"
+          ],
+          "title": "Action"
+        },
+        "AuditLog": {
+          "properties": {
+            "_id": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Id"
+            },
+            "username": {
+              "type": "string",
+              "title": "Username"
+            },
+            "action": {
+              "type": "string",
+              "title": "Action"
+            },
+            "resource": {
+              "type": "string",
+              "title": "Resource"
+            },
+            "timestamp": {
+              "type": "string",
+              "format": "date-time",
+              "title": "Timestamp",
+              "default": "2025-01-24T12:36:25.599507+07:00"
+            },
+            "role": {
+              "type": "string",
+              "title": "Role"
+            },
+            "detail": {
+              "type": "string",
+              "title": "Detail"
+            }
+          },
+          "type": "object",
+          "required": [
+            "username",
+            "action",
+            "resource",
+            "role",
+            "detail"
+          ],
+          "title": "AuditLog"
+        },
+        "Body_login_for_access_token_api_auth_token_post": {
+          "properties": {
+            "grant_type": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "password"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Grant Type"
+            },
+            "username": {
+              "type": "string",
+              "title": "Username"
+            },
+            "password": {
+              "type": "string",
+              "title": "Password"
+            },
+            "scope": {
+              "type": "string",
+              "title": "Scope",
+              "default": ""
+            },
+            "client_id": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Client Id"
+            },
+            "client_secret": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Client Secret"
+            }
+          },
+          "type": "object",
+          "required": [
+            "username",
+            "password"
+          ],
+          "title": "Body_login_for_access_token_api_auth_token_post"
+        },
+        "Body_upload_firmware_api_firmware_upload__post": {
+          "properties": {
+            "file": {
+              "type": "string",
+              "format": "binary",
+              "title": "File"
+            }
+          },
+          "type": "object",
+          "required": [
+            "file"
+          ],
+          "title": "Body_upload_firmware_api_firmware_upload__post"
+        },
+        "Device": {
+          "properties": {
+            "_id": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Id"
+            },
+            "mac": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Mac"
+            },
+            "name": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Name"
+            },
+            "hour_on": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Hour On"
+            },
+            "hour_off": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Hour Off"
+            },
+            "minute_on": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Minute On"
+            },
+            "minute_off": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Minute Off"
+            },
+            "auto": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Auto"
+            },
+            "toggle": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Toggle"
+            },
+            "tenant_id": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Tenant Id"
+            }
+          },
+          "type": "object",
+          "title": "Device"
+        },
+        "DeviceCreate": {
+          "properties": {
+            "mac": {
+              "type": "string",
+              "title": "Mac"
+            },
+            "name": {
+              "type": "string",
+              "title": "Name"
+            },
+            "hour_on": {
+              "type": "integer",
+              "title": "Hour On"
+            },
+            "hour_off": {
+              "type": "integer",
+              "title": "Hour Off"
+            },
+            "minute_on": {
+              "type": "integer",
+              "title": "Minute On"
+            },
+            "minute_off": {
+              "type": "integer",
+              "title": "Minute Off"
+            },
+            "auto": {
+              "type": "boolean",
+              "title": "Auto",
+              "default": false
+            },
+            "toggle": {
+              "type": "boolean",
+              "title": "Toggle",
+              "default": false
+            },
+            "tenant_id": {
+              "type": "string",
+              "title": "Tenant Id"
+            }
+          },
+          "type": "object",
+          "required": [
+            "mac",
+            "name",
+            "hour_on",
+            "hour_off",
+            "minute_on",
+            "minute_off",
+            "tenant_id"
+          ],
+          "title": "DeviceCreate"
+        },
+        "DeviceEdit": {
+          "properties": {
+            "mac": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Mac"
+            },
+            "name": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Name"
+            }
+          },
+          "type": "object",
+          "title": "DeviceEdit"
+        },
+        "EnergyReportResponse": {
+          "properties": {
+            "timestamp": {
+              "type": "string",
+              "format": "date-time",
+              "title": "Timestamp"
+            },
+            "total_energy": {
+              "type": "number",
+              "title": "Total Energy"
+            }
+          },
+          "type": "object",
+          "required": [
+            "timestamp",
+            "total_energy"
+          ],
+          "title": "EnergyReportResponse"
+        },
+        "HTTPValidationError": {
+          "properties": {
+            "detail": {
+              "items": {
+                "$ref": "#/components/schemas/ValidationError"
+              },
+              "type": "array",
+              "title": "Detail"
+            }
+          },
+          "type": "object",
+          "title": "HTTPValidationError"
+        },
+        "Role": {
+          "type": "string",
+          "enum": [
+            "superadmin",
+            "admin",
+            "monitor",
+            "operator"
+          ],
+          "title": "Role"
+        },
+        "Schedule": {
+          "properties": {
+            "hour_on": {
+              "type": "integer",
+              "title": "Hour On"
+            },
+            "hour_off": {
+              "type": "integer",
+              "title": "Hour Off"
+            },
+            "minute_on": {
+              "type": "integer",
+              "title": "Minute On"
+            },
+            "minute_off": {
+              "type": "integer",
+              "title": "Minute Off"
+            }
+          },
+          "type": "object",
+          "required": [
+            "hour_on",
+            "hour_off",
+            "minute_on",
+            "minute_off"
+          ],
+          "title": "Schedule"
+        },
+        "Tenant": {
+          "properties": {
+            "_id": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Id"
+            },
+            "name": {
+              "type": "string",
+              "title": "Name"
+            },
+            "created_date": {
+              "type": "string",
+              "format": "date-time",
+              "title": "Created Date"
+            },
+            "disabled": {
+              "type": "boolean",
+              "title": "Disabled"
+            }
+          },
+          "type": "object",
+          "required": [
+            "name",
+            "created_date",
+            "disabled"
+          ],
+          "title": "Tenant"
+        },
+        "TenantCreate": {
+          "properties": {
+            "name": {
+              "type": "string",
+              "title": "Name"
+            },
+            "created_date": {
+              "type": "string",
+              "format": "date-time",
+              "title": "Created Date"
+            },
+            "disabled": {
+              "type": "boolean",
+              "title": "Disabled",
+              "default": false
+            }
+          },
+          "type": "object",
+          "required": [
+            "name"
+          ],
+          "title": "TenantCreate"
+        },
+        "Token": {
+          "properties": {
+            "access_token": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Access Token"
+            },
+            "refresh_token": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Refresh Token"
+            },
+            "tenant_id": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Tenant Id"
+            },
+            "role": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/Role"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "type": "object",
+          "title": "Token"
+        },
+        "User": {
+          "properties": {
+            "_id": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Id"
+            },
+            "username": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Username"
+            },
+            "email": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "email"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Email"
+            },
+            "role": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/Role"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "disabled": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Disabled",
+              "default": false
+            }
+          },
+          "type": "object",
+          "title": "User"
+        },
+        "ValidationError": {
+          "properties": {
+            "loc": {
+              "items": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "integer"
+                  }
+                ]
+              },
+              "type": "array",
+              "title": "Location"
+            },
+            "msg": {
+              "type": "string",
+              "title": "Message"
+            },
+            "type": {
+              "type": "string",
+              "title": "Error Type"
+            }
+          },
+          "type": "object",
+          "required": [
+            "loc",
+            "msg",
+            "type"
+          ],
+          "title": "ValidationError"
+        }
+      },
+      "securitySchemes": {
+        "OAuth2PasswordBearer": {
+          "type": "oauth2",
+          "flows": {
+            "password": {
+              "scopes": {
+  
+              },
+              "tokenUrl": "api/auth/token"
+            }
+          }
+        }
+      }
+    }
+  }

@@ -6,15 +6,18 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Cookies from 'js-cookie';
 import * as Popover from '@radix-ui/react-popover';
 import { Bell } from "lucide-react"; // Bell icon from Lucide
+import { Card } from "./ui/card";
+import { cn } from "../lib/utils";
 
-type Notification = {
-  id: number;
-  type: "INFO" | "CRITICAL" | "WARNING";
+type NotificationProps = {
+  _id: string;
+  type: "info" | "critical" | "warning";
   message: string;
+  timestamp: string;
 };
 
 const NotificationCard = () => {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [notifications, setNotifications] = useState<NotificationProps[]>([]);
 
   useEffect(() => {
     const token = Cookies.get('token') || '';
@@ -23,7 +26,7 @@ const NotificationCard = () => {
     const socket = new WebSocket(`${NEXT_PUBLIC_WS_URL}/notifications?token=${token}`);
 
     socket.onmessage = (event) => {
-      const data: Notification[] = JSON.parse(event.data);
+      const data: NotificationProps[] = JSON.parse(event.data);
       if (!data) return;
       setNotifications(data);
     };
@@ -33,17 +36,17 @@ const NotificationCard = () => {
     };
   }, []);
 
-  const removeNotification = (id: number) => {
-    setNotifications((prev) => prev.filter((n) => n.id !== id));
+  const removeNotification = (id: string) => {
+    setNotifications((prev) => prev.filter((n) => n._id !== id));
   };
 
-  const getNotificationStyle = (type: Notification['type']) => {
+  const getNotificationStyle = (type: NotificationProps['type']) => {
     switch (type) {
-      case 'INFO':
+      case 'info':
         return 'bg-blue-100 border-l-4 border-blue-500 text-blue-700';
-      case 'CRITICAL':
+      case 'critical':
         return 'bg-red-100 border-l-4 border-red-500 text-red-700';
-      case 'WARNING':
+      case 'warning':
         return 'bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700';
       default:
         return 'bg-gray-100 border-l-4 border-gray-500 text-gray-700';
@@ -80,13 +83,16 @@ const NotificationCard = () => {
                 >
                   <button
                     className="absolute top-1 right-2 text-xl leading-none focus:outline-none"
-                    onClick={() => removeNotification(notification.id)}
+                    onClick={() => removeNotification(notification._id)}
                     aria-label="Close Notification"
                   >
                     &times;
                   </button>
-                  <strong className="font-semibold">{notification.type}</strong>
+                  <strong className="font-semibold">{notification.type.charAt(0).toUpperCase() + notification.type.slice(1)}</strong>
                   <p className="mt-1">{notification.message}</p>
+                  <span className="text-xs opacity-50">
+                    {new Date(notification.timestamp).toLocaleString()}
+                  </span>
                 </motion.div>
               ))}
             </AnimatePresence>

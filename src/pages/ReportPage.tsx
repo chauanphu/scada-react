@@ -53,7 +53,6 @@ const ReportPage: React.FC = () => {
   });
   const [view, setView] = useState<View>(View.HOURLY);
   const apiContext = useAPI();
-  const permissions = apiContext?.permissions || [];
   const [isSidebarOpen, setSidebarOpen] = useState(true);
   const [startDate, setStartDate] = useState<string>(getDefaultStartDate(View.HOURLY));
   const [endDate, setEndDate] = useState<string>(new Date().toISOString());
@@ -174,7 +173,6 @@ const ReportPage: React.FC = () => {
 
   return (
     <>
-      <Navbar permissions={permissions} />
       {/* Add pt-14 to account for fixed navbar height */}
       <div className="flex h-screen pt-14">
         {/* Sidebar */}

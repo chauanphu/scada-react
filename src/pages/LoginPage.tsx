@@ -3,8 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { LucideUserCircle2, Lock } from 'lucide-react';
 import logo from '../images/logo/logo.png';
-import { getToken } from '../lib/api';
-import Cookies from 'js-cookie';
+import { useAPI } from '../contexts/APIProvider';
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -12,6 +11,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const apiContext = useAPI();
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();
@@ -19,10 +19,7 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      const token = await getToken(username, password);
-      // Set token to the cookie with expiration time and redirect to the dashboard /
-      Cookies.set('token', token, { expires: 7 });
-      navigate('/');
+      await apiContext.login(username, password);
     } catch (error: any) {
       setError(error.message);
     } finally {

@@ -6,18 +6,20 @@ import React, {
   ReactNode,
 } from "react";
 import { useAPI } from "./APIProvider";
-import { getClusters, NEXT_PUBLIC_WS_URL, setCommand } from "../lib/api";
-import { Cluster, UnitStatus } from "../types/Cluster";
+import { getDevices, NEXT_PUBLIC_WS_URL, setCommand } from "../lib/api";
+import { Device, Schedule, DeviceStatus } from "../types/Cluster";
+import { useToast } from './ToastProvider';
 
 interface WebSocketContextType {
-  clusters: Cluster[];
-  unitStatuses: { [key: number]: UnitStatus };
-  selectedUnit: UnitStatus | null;
-  setSelectedUnit: React.Dispatch<React.SetStateAction<UnitStatus | null>>;
-  toggleLight: (unitId: number) => Promise<void>;
-  toggleAutomatic: (unitId: number) => void;
-  disableAutomatic: (unitId: number) => void;
-  sendMessage: (unitId: number, message: string) => void;
+  devices: Device[];
+  deviceStatuses: { [key: string]: DeviceStatus };
+  selectedDevice: Device | null;
+  setSelectedDevice: React.Dispatch<React.SetStateAction<Device | null>>;
+  toggleDevice: (deviceId: string) => Promise<void>;
+  toggleAutomatic: (deviceId: string) => void;
+  disableAutomatic: (deviceId: string) => void;
+  sendCommand: (deviceId: string, type: "toggle" | "schedule" | "auto", payload: boolean | Schedule) => Promise<void>;
+  sendMessage: (deviceId: string, message: string) => void;
 }
 
 const WebSocketContext = createContext<WebSocketContextType | null>(null);
@@ -26,88 +28,30 @@ interface WebSocketProviderProps {
   children: ReactNode;
 }
 
-type AliveResponse = {
-  alive: "0" | "1";
-  time: string;
-};
-
-type StatusResponse = {
-  time: string;
-  power: number;
-  power_factor: number;
-  current: number;
-  voltage: number;
-  frequency: number;
-  gps_log: number;
-  gps_lat: number;
-  total_energy: number;
-  toggle: number;
-  auto: number;
-  hour_on: number;
-  minute_on: number;
-  hour_off: number;
-  minute_off: number;
-};
-
 export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
   children,
 }) => {
   const apiContext = useAPI();
   const token = apiContext?.token || "";
   const isAuthenticated = apiContext?.isAuthenticated;
-  const [clusters, setClusters] = useState<Cluster[]>([]);
-  const [sockets, setSockets] = useState<Map<number, WebSocket>>(new Map());
-  const [unitStatuses, setUnitStatus] = useState<{ [key: number]: UnitStatus }>({});
-  const [selectedUnit, setSelectedUnit] = useState<UnitStatus | null>(null);
+  const [devices, setDevices] = useState<Device[]>([]);
+  const [sockets, setSockets] = useState<Map<string, WebSocket>>(new Map());
+  const [deviceStatuses, setDeviceStatus] = useState<{ [key: string]: DeviceStatus }>({});
+  const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
+  const { addToast } = useToast();
 
   useEffect(() => {
     if (isAuthenticated && token) {
-      fetchClusters(token);
+      fetchDevices(token);
     }
   }, [isAuthenticated, token]);
 
   useEffect(() => {
-    const connectWebSocket = (unitId: number) => {
-      const ws = new WebSocket(`${NEXT_PUBLIC_WS_URL}/unit/${unitId}/status`);
-      ws.onmessage = (event) => {
-        const data: AliveResponse | StatusResponse = JSON.parse(event.data);
-        // Handle alive message
-        if ("alive" in data && data.alive === "0") {
-          setUnitStatus((prevState) => ({
-            ...prevState,
-            [unitId]: { ...prevState[unitId], isConnected: false },
-          }));
-        } else if ("power" in data) {
-          setUnitStatus((prevState) => ({
-            ...prevState,
-            [unitId]: {
-              ...prevState[unitId],
-              isConnected: true,
-              isOn: data.toggle === 1,
-              isAutomatic: data.auto === 1,
-              power: data.power,
-              current: data.current,
-              voltage: data.voltage,
-              gps_lat: data.gps_lat,
-              gps_log: data.gps_log,
-              hour_on: data.hour_on,
-              minute_on: data.minute_on,
-              hour_off: data.hour_off,
-              minute_off: data.minute_off,
-            },
-          }));
-        }
-      };
-      return ws;
-    };
-    if (isAuthenticated && token && clusters.length > 0) {
-      //
-      const newSockets = new Map<number, WebSocket>();
-      clusters.forEach((cluster: { units: { id: number }[] }) => {
-        cluster.units.forEach((unit) => {
-          const ws = connectWebSocket(unit.id);
-          newSockets.set(unit.id, ws);
-        });
+    if (isAuthenticated && token && devices.length > 0) {
+      const newSockets = new Map<string, WebSocket>();
+      devices.forEach((device) => {
+        const ws = connectWebSocket(device._id);
+        newSockets.set(device._id, ws);
       });
       setSockets(newSockets);
 
@@ -115,49 +59,124 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
         newSockets.forEach((ws) => ws.close());
       };
     }
-  }, [isAuthenticated, token, clusters]);
+  }, [isAuthenticated, token, devices]);
 
-  const fetchClusters = async (token: string) => {
-    const data = await getClusters(token);
-    setClusters(data);
+  useEffect(() => {
+    if (!apiContext?.token) return;
+
+    const ws = new WebSocket(`${NEXT_PUBLIC_WS_URL}/ws?token=${apiContext.token}`);
+
+    ws.onopen = () => {
+      console.log('WebSocket connected');
+      addToast('success', 'Connected to server');
+    };
+
+    ws.onclose = () => {
+      console.log('WebSocket disconnected');
+      addToast('error', 'Disconnected from server');
+    };
+
+    ws.onerror = (error) => {
+      console.error('WebSocket error:', error);
+      addToast('error', 'Connection error');
+    };
+
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      if (!data) return;
+
+      setDeviceStatus((prevState) => ({
+        ...prevState,
+        [data.device_id]: {
+          ...prevState[data.device_id],
+          ...data,
+        },
+      }));
+    };
+
+    return () => {
+      ws.close();
+    };
+  }, [apiContext?.token, addToast]);
+
+  const connectWebSocket = (deviceId: string) => {
+    const ws = new WebSocket(
+      `${NEXT_PUBLIC_WS_URL}/ws/devices/${deviceId}?token=${token}`
+    );
+
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      if (!data) return;
+
+      setDeviceStatus((prevState) => ({
+        ...prevState,
+        [deviceId]: {
+          ...prevState[deviceId],
+          ...data,
+        },
+      }));
+    };
+
+    return ws;
   };
 
-  const sendMessage = (unitId: number, message: string) => {
-    const ws = sockets.get(unitId);
+  const fetchDevices = async (token: string) => {
+    const data = await getDevices(token);
+    setDevices(data);
+  };
+
+  const sendMessage = (deviceId: string, message: string) => {
+    const ws = sockets.get(deviceId);
     if (ws && ws.readyState === WebSocket.OPEN) {
       ws.send(JSON.stringify({ message }));
     } else {
-      console.warn(`WebSocket for unit ${unitId} is not open.`);
+      console.warn(`WebSocket for device ${deviceId} is not open.`);
     }
   };
 
-  const toggleLight = async (unitId: number) => {
-    const status = unitStatuses[unitId];
+  const toggleDevice = async (deviceId: string) => {
+    const status = deviceStatuses[deviceId];
     if (status) {
-      await setCommand(token, unitId, "toggle", !status.isOn);
-      setUnitStatus((prevState) => ({
+      await setCommand(token, deviceId, "toggle", !status.is_on);
+      setDeviceStatus((prevState) => ({
         ...prevState,
-        [unitId]: { ...status, isOn: !status.isOn, isAutomatic: false },
+        [deviceId]: { ...status, is_on: !status.is_on, is_auto: false },
       }));
     }
   };
 
-  const disableAutomatic = (unitId: number) => {
-    const status = unitStatuses[unitId];
+  const disableAutomatic = (deviceId: string) => {
+    const status = deviceStatuses[deviceId];
     if (status) {
-      setUnitStatus((prevState) => ({
+      setDeviceStatus((prevState) => ({
         ...prevState,
-        [unitId]: { ...status, isAutomatic: false },
+        [deviceId]: { ...status, is_auto: false },
       }));
     }
   };
 
-  const toggleAutomatic = (unitId: number) => {
-    const status = unitStatuses[unitId];
+  const toggleAutomatic = (deviceId: string) => {
+    const status = deviceStatuses[deviceId];
     if (status) {
-      setUnitStatus((prevState) => ({
+      setDeviceStatus((prevState) => ({
         ...prevState,
-        [unitId]: { ...status, isAutomatic: !status.isAutomatic },
+        [deviceId]: { ...status, is_auto: !status.is_auto },
+      }));
+    }
+  };
+
+  const sendCommand = async (deviceId: string, type: "toggle" | "schedule" | "auto", payload: boolean | Schedule) => {
+    await setCommand(token, deviceId, type, payload);
+    const status = deviceStatuses[deviceId];
+    if (status) {
+      setDeviceStatus((prevState) => ({
+        ...prevState,
+        [deviceId]: {
+          ...status,
+          ...(type === "toggle" && { is_on: payload as boolean, is_auto: false }),
+          ...(type === "auto" && { is_auto: payload as boolean }),
+          ...(type === "schedule" && { schedule: payload as Schedule }),
+        },
       }));
     }
   };
@@ -165,13 +184,14 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
   return (
     <WebSocketContext.Provider
       value={{
-        clusters,
-        unitStatuses,
-        selectedUnit,
-        setSelectedUnit,
-        toggleLight,
+        devices,
+        deviceStatuses,
+        selectedDevice,
+        setSelectedDevice,
+        toggleDevice,
         toggleAutomatic,
         disableAutomatic,
+        sendCommand,
         sendMessage,
       }}
     >

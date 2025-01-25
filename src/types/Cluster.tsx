@@ -1,33 +1,33 @@
 export type Unit = {
-    id: number,
+    _id?: string;
     name: string;
     mac: string;
     latitude?: number;
     longitude?: number;
     toggle?: boolean;
-  }
+    auto?: boolean;
+    schedule?: Schedule;
+    status?: UnitStatus;
+    tenant_id?: string;
+}
 
-  export type UnitStatus = {
-    id: number;
-    isOn: boolean;
-    isAutomatic: boolean;
-    isConnected: boolean;
+export type UnitStatus = {
     power: number;
     current: number;
     voltage: number;
-    gps_log: number;
-    gps_lat: number;
-    hour_on: number;
-    minute_on: number;
-    hour_off: number;
-    minute_off: number;
+    latitude: number;
+    longitude: number;
+    is_on: boolean;
+    is_auto: boolean;
+    is_connected: boolean;
+    schedule: Schedule;
 };
 
 export type Cluster = {
-    id: number;
+    _id: string;
     name: string;
-    // url: string;
     units: Unit[];
+    tenant_id?: string;
 };
 
 export type UserShortened = {
@@ -36,27 +36,29 @@ export type UserShortened = {
 }
 
 export type ClusterFull = {
-    id: number;
+    _id: string;
     name: string;
     units: Unit[];
-    created: string;
-    updated: string;
+    tenant_id?: string;
+    created_at: string;
+    updated_at: string;
 };
 
 export type CreateUnit = {
-    id?: Partial<number | null | undefined>;
     name: string;
     mac: string;
+    latitude?: number;
+    longitude?: number;
 };
 
 export type CreateClusterData = {
     name: string;
-    units: Partial<CreateUnit[]>;
+    units: CreateUnit[];
 }
 
 export type Schedule = {
-    hourOn?: number,
-    minuteOn?: number,
-    hourOff?: number,
-    minuteOff?: number
+    hour_on: number;
+    minute_on: number;
+    hour_off: number;
+    minute_off: number;
 }

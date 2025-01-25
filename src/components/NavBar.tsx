@@ -1,154 +1,151 @@
-import { useEffect, useState } from 'react';
-import { User, BarChart, FileText, LogOut, Home, Server, Bell } from 'lucide-react';
-import { Button } from "../components/ui/button";
-import { useNavigate } from 'react-router-dom';
-import Cookies from 'js-cookie';
-import logo from '../images/logo/logo.png';
-import { NEXT_PUBLIC_WS_URL } from '../lib/api';
+import React, { useState } from "react";
+import { Link, useLocation } from "react-router-dom";
+import { useAPI } from "../contexts/APIProvider";
 
-export enum PermissionEnum {
-  MONITOR_SYSTEM = 'GIÁM SÁT HỆ THỐNG',
-  CONTROL_DEVICE = 'ĐIỀU KHIỂN THIẾT BỊ',
-  REPORT = 'BÁO CÁO',
-  MANAGE_USER = 'QUẢN LÝ USER',
-  CONFIG_DEVICE = 'CẤU HÌNH THIẾT BỊ',
-  VIEW_CHANGE_LOG = 'XEM NHẬT KÝ THAY ĐỔI',
+interface Notification {
+  id: string;
+  message: string;
+  timestamp: string;
 }
 
-type Notification = {
-  id: number;
-  type: "INFO" | "CRITICAL" | "WARNING";
-  message: string;
-};
-
-export function Navbar({ permissions }: { permissions: PermissionEnum[] }) {
-  const navigate = useNavigate();
-  const handleLogout = () => {
-    Cookies.remove("token");
-    navigate('/login');
-  };
-
+export const Navbar: React.FC = () => {
+  const location = useLocation();
+  const apiContext = useAPI();
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [showNotifications, setShowNotifications] = useState(false);
 
-  useEffect(() => {
-    const token = Cookies.get('token') || '';
-    if (!token) return;
+  if (!apiContext) {
+    return null;
+  }
 
-    const socket = new WebSocket(`${NEXT_PUBLIC_WS_URL}/notifications?token=${token}`);
+  const { hasPermission } = apiContext;
 
-    socket.onmessage = (event) => {
-      const data: Notification[] = JSON.parse(event.data);
-      if (!data) return;
-      setNotifications(data);
-    };
-
-    return () => {
-      socket.close();
-    };
-  }, []);
-
-  // Define tabs with their name, URL, and accessibility based on roles
   const tabs = [
     {
-      name: 'Trang chủ',
-      url: '/',
-      icon: <Home className="h-5 w-5" />,
-      isAccessible: true,
+      name: "Trang chủ",
+      href: "/",
+      permission: "view",
     },
     {
-      name: 'Người dùng',
-      url: '/user',
-      icon: <User className="h-5 w-5" />,
-      isAccessible:
-        permissions.includes(PermissionEnum.MANAGE_USER) ||
-        permissions.includes(PermissionEnum.MONITOR_SYSTEM),
+      name: "Thiết bị",
+      href: "/devices",
+      permission: "view",
     },
     {
-      name: 'Thiết bị',
-      url: '/cluster',
-      icon: <Server className="h-5 w-5" />,
-      isAccessible: permissions.includes(
-        PermissionEnum.MONITOR_SYSTEM ||
-          PermissionEnum.CONTROL_DEVICE ||
-          PermissionEnum.CONFIG_DEVICE
-      ),
+      name: "Người dùng",
+      href: "/users",
+      permission: "view",
     },
     {
-      name: 'Báo cáo',
-      url: '/report',
-      icon: <BarChart className="h-5 w-5" />,
-      isAccessible: permissions.includes(PermissionEnum.REPORT),
+      name: "Phân quyền",
+      href: "/roles",
+      permission: "view",
     },
     {
-      name: 'Nhật ký thay đổi',
-      url: '/changelog',
-      icon: <FileText className="h-5 w-5" />,
-      isAccessible: permissions.includes(PermissionEnum.VIEW_CHANGE_LOG),
+      name: "Nhật ký",
+      href: "/audit",
+      permission: "view",
     },
   ];
 
   return (
-    <div className="fixed bg-white left-0 right-0 z-50 flex items-center w-full h-14 px-6">
-      {/* Left side with logo and tabs */}
-      <div className="flex items-center space-x-2">
-        {/* Logo on the left */}
-        <div className="flex-none w-16">
-          <img
-            src={logo}
-            alt="Logo"
-            width={40}
-            height={40}
-            className="rounded-full shadow-md"
-          />
-        </div>
-
-        {/* Tabs aligned on the left */}
-        {tabs.map(
-          (tab, index) =>
-            tab.isAccessible && (
-              <Button
-                key={index}
-                variant="ghost"
-                className="rounded-full flex items-center space-x-2"
-                onClick={() => navigate(tab.url)}
+    <nav className="bg-white shadow">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between h-16">
+          <div className="flex">
+            <div className="flex-shrink-0 flex items-center">
+              <img
+                className="block lg:hidden h-8 w-auto"
+                src="/logo.png"
+                alt="Logo"
+              />
+              <img
+                className="hidden lg:block h-8 w-auto"
+                src="/logo.png"
+                alt="Logo"
+              />
+            </div>
+            <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
+              {tabs.map(
+                (tab) =>
+                  hasPermission(tab.permission) && (
+                    <Link
+                      key={tab.href}
+                      to={tab.href}
+                      className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
+                        location.pathname === tab.href
+                          ? "border-indigo-500 text-gray-900"
+                          : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
+                      }`}
+                    >
+                      {tab.name}
+                    </Link>
+                  )
+              )}
+            </div>
+          </div>
+          <div className="flex items-center">
+            <div className="relative">
+              <button
+                onClick={() => setShowNotifications(!showNotifications)}
+                className="p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
               >
-                {tab.icon}
-                <span>{tab.name}</span>
-              </Button>
-            )
-        )}
-      </div>
+                <span className="sr-only">Xem thông báo</span>
+                <svg
+                  className="h-6 w-6"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+                  />
+                </svg>
+                {notifications.length > 0 && (
+                  <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-400 ring-2 ring-white" />
+                )}
+              </button>
 
-      {/* Spacer to push the buttons to the right */}
-      <div className="flex-grow"></div>
+              {showNotifications && (
+                <div className="origin-top-right absolute right-0 mt-2 w-80 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none">
+                  <div className="py-1">
+                    {notifications.length === 0 ? (
+                      <div className="px-4 py-2 text-sm text-gray-700">
+                        Không có thông báo mới
+                      </div>
+                    ) : (
+                      notifications.map((notification) => (
+                        <div
+                          key={notification.id}
+                          className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        >
+                          <div className="font-medium">{notification.message}</div>
+                          <div className="text-xs text-gray-500">
+                            {notification.timestamp}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
 
-      {/* Notification Button */}
-      <div className="flex items-center space-x-2">
-        <Button
-          variant="ghost"
-          className="relative rounded-full flex items-center"
-          onClick={() => navigate('/task')}
-        >
-          <Bell className="h-5 w-5" />
-          {notifications.length > 0 && (
-            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
-              {notifications.length}
-            </span>
-          )}
-        </Button>
+            <div className="ml-3">
+              <button
+                onClick={() => apiContext.logout()}
+                className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-red-400 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              >
+                Đăng xuất
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
-
-      {/* Logout button on the right */}
-      <div className="flex items-center">
-        <Button
-          variant="ghost"
-          className="rounded-full flex items-center space-x-2 text-red-700 hover:text-red-900"
-          onClick={handleLogout}
-        >
-          <LogOut className="h-5 w-5" />
-          <span>Đăng xuất</span>
-        </Button>
-      </div>
-    </div>
+    </nav>
   );
-}
+};

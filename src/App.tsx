@@ -1,29 +1,35 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import RootLayout from './RootLayout';
-import HomePage from "./pages/HomePage";
-import LoginPage from './pages/LoginPage';
-import "./index.css";
-import UserPage from './pages/UserPage';
-import ClusterPage from './pages/ClusterPage';
-import ReportPage from './pages/ReportPage';
-import ChangelogPage from './pages/ChangelogPage';
-import TaskPage from './pages/TaskPage';
+import React from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import LoginPage from "./pages/LoginPage";
+import { HomePage } from "./pages/HomePage";
+import { DevicesPage } from "./pages/DevicesPage";
+import { UsersPage } from "./pages/UsersPage";
+import { RolesPage } from "./pages/RolesPage";
+import { AuditPage } from "./pages/AuditPage";
+import { APIProvider } from "./contexts/APIProvider";
+import { WebSocketProvider } from "./contexts/WebsocketProvider";
+import { ToastProvider } from "./contexts/ToastProvider";
+import RootLayout from "./RootLayout";
 
 function App() {
   return (
     <Router>
-      <RootLayout>
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/login" element={<LoginPage />} />
-          {/* Add other routes */}
-          <Route path="/user" element={<UserPage />} />
-          <Route path="/cluster" element={<ClusterPage />} />
-          <Route path="/report/:unitId?" element={<ReportPage />} />
-          <Route path="/changelog" element={<ChangelogPage />} /> 
-          <Route path="/task" element={<TaskPage />} />
-        </Routes>
-      </RootLayout>
+      <APIProvider>
+        <ToastProvider>
+          <WebSocketProvider>
+            <Routes>
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/" element={<RootLayout />}>
+                <Route index element={<HomePage />} />
+                <Route path="devices" element={<DevicesPage />} />
+                <Route path="users" element={<UsersPage />} />
+                <Route path="roles" element={<RolesPage />} />
+                <Route path="audit" element={<AuditPage />} />
+              </Route>
+            </Routes>
+          </WebSocketProvider>
+        </ToastProvider>
+      </APIProvider>
     </Router>
   );
 }
