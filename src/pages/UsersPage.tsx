@@ -237,7 +237,7 @@ export const UsersPage: React.FC = () => {
         <div className="max-w-7xl mx-auto">
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-2xl font-bold">Quản lý người dùng</h1>
-            <Button onClick={() => setIsCreateModalOpen(true)}>
+            <Button disabled onClick={() => setIsCreateModalOpen(true)}>
               Thêm người dùng
             </Button>
           </div>
