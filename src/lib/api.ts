@@ -83,12 +83,12 @@ export async function getToken(username: string, password: string): Promise<Toke
   }
 
   if (!response.ok) {
-    throw new Error("Invalid credentials");
+    throw new Error("Thông tin đăng nhập không hợp lệ");
   }
 
   const data = await response.json();
   if (!data.access_token) {
-    throw new Error("Invalid token response");
+    throw new Error("Phản hồi token không hợp lệ");
   }
   return data;
 }
@@ -104,7 +104,7 @@ export async function getDevices(token: string): Promise<Device[]> {
   });
 
   if (!response.ok) {
-    throw new Error("Failed to fetch devices");
+    throw new Error("Không thể tải danh sách thiết bị");
   }
 
   const data = await response.json();
@@ -121,7 +121,7 @@ export async function getUsers(token: string): Promise<User[]> {
   });
 
   if (!response.ok) {
-    throw new Error("Failed to fetch users");
+    throw new Error("Không thể tải danh sách người dùng");
   }
   const data = await response.json();
   return data;
@@ -141,7 +141,7 @@ export async function createUser(
   });
 
   if (!response.ok) {
-    throw new Error("Failed to create user");
+    throw new Error("Không thể tạo người dùng mới");
   }
 
   return response.json();
@@ -162,7 +162,7 @@ export async function updateUser(
   });
 
   if (!response.ok) {
-    throw new Error("Failed to update user");
+    throw new Error("Không thể cập nhật người dùng");
   }
 
   return response.json();
@@ -179,7 +179,7 @@ export async function deleteUser(token: string, userId: number): Promise<User> {
   });
 
   if (!response.ok) {
-    throw new Error("Failed to delete user");
+    throw new Error("Không thể xóa người dùng");
   }
   return response.json();
 }
@@ -200,7 +200,7 @@ export async function createDevice(
   });
 
   if (!response.ok) {
-    throw new Error("Failed to create device");
+    throw new Error("Không thể tạo thiết bị mới");
   }
 
   return response.json();
@@ -223,7 +223,7 @@ export async function updateDevice(
   });
 
   if (!response.ok) {
-    throw new Error("Failed to update device");
+    throw new Error("Không thể cập nhật thiết bị");
   }
 
   return response.json();
@@ -244,48 +244,108 @@ export async function deleteDevice(
   });
 
   if (!response.ok) {
-    throw new Error("Failed to delete device");
+    throw new Error("Không thể xóa thiết bị");
   }
 
   return response.json();
 }
 
 // Control device
-export async function setCommand(
+// Toggle device power
+export async function toggleDevice(
   token: string,
   deviceId: string,
-  type: "toggle" | "schedule" | "auto",
-  payload: boolean | Schedule
+  state: boolean
 ): Promise<void> {
-  const body = JSON.stringify({
-    type,
-    payload,
-  });
-  const response = await fetch(
-    `${NEXT_PUBLIC_API_URL}/devices/${deviceId}/control`,
-    {
-      method: "POST",
-      headers: {
-        accept: "application/json",
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: body,
-    }
-  );
+  try {
+    const response = await fetch(
+      `${NEXT_PUBLIC_API_URL}/devices/toggle/${deviceId}?value=${state}`,
+      {
+        method: "PUT",
+        headers: {
+          accept: "application/json",
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        // body: JSON.stringify({ state }), khong can thiet
+      }
+    );
 
-  if (!response.ok) {
-    throw new Error("Failed to control device");
+    if (!response.ok) {
+      throw new Error("Không thể thay đổi trạng thái thiết bị");
+    }
+  } catch (error) {
+    throw new Error("Lỗi khi điều khiển thiết bị: " + (error as Error).message);
+  }
+}
+
+// Set device auto mode
+export async function setDeviceAuto(
+  token: string,
+  deviceId: string,
+  auto: boolean
+): Promise<void> {
+  try {
+    const response = await fetch(
+      `${NEXT_PUBLIC_API_URL}/devices/auto/${deviceId}`,
+      {
+        method: "PUT",
+        headers: {
+          accept: "application/json",
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ auto }),
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error("Không thể thay đổi chế độ tự động của thiết bị");
+    }
+  } catch (error) {
+    throw new Error(
+      "Lỗi khi thay đổi chế độ tự động: " + (error as Error).message
+    );
+  }
+}
+
+// Set device schedule
+export async function setDeviceSchedule(
+  token: string,
+  deviceId: string,
+  schedule: Schedule
+): Promise<void> {
+  try {
+    const response = await fetch(
+      `${NEXT_PUBLIC_API_URL}/devices/schedule/${deviceId}`,
+      {
+        method: "PUT",
+        headers: {
+          accept: "application/json",
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(schedule),
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error("Không thể cập nhật lịch trình thiết bị");
+    }
+  } catch (error) {
+    throw new Error(
+      "Lỗi khi cập nhật lịch trình: " + (error as Error).message
+    );
   }
 }
 
 export enum View {
-  HOURLY = "hourly",
-  DAILY = "daily",
-  WEEKLY = "weekly",
-  MONTHLY = "monthly",
-  QUARTERLY = "quarterly",
-  YEARLY = "yearly",
+  HOURLY = "theo giờ",
+  DAILY = "theo ngày",
+  WEEKLY = "theo tuần",
+  MONTHLY = "theo tháng",
+  QUARTERLY = "theo quý",
+  YEARLY = "theo năm",
 }
 
 // GET energy data
@@ -315,7 +375,7 @@ export async function getEnergyData(
       return [];
     }
     if (response.status !== 200) {
-      throw new Error("Failed to fetch energy data");
+      throw new Error("Không thể tải dữ liệu năng lượng");
     }
     return response.json();
   } catch (error) {
@@ -341,7 +401,7 @@ export async function getRoles(token: string): Promise<Role[]> {
     }
 
     if (!response.ok) {
-      throw new Error("Failed to fetch roles");
+      throw new Error("Không thể tải danh sách vai trò");
     }
 
     return response.json();
@@ -387,7 +447,7 @@ export async function getAuditLogs(
     );
 
     if (!response.ok) {
-      const error = new Error("Failed to fetch audit logs");
+      const error = new Error("Không thể tải nhật ký kiểm tra");
       error.name = "EmptyResponseError";
       throw error;
     }
@@ -411,7 +471,7 @@ export async function downloadCSVAudit(token: string): Promise<void> {
     });
 
     if (!response.ok) {
-      throw new Error("Failed to download CSV audit logs");
+      throw new Error("Không thể tải xuống nhật ký kiểm tra dạng CSV");
     }
 
     const blob = await response.blob();
@@ -467,7 +527,7 @@ export async function getTasks(
   );
 
   if (!response.ok) {
-    throw new Error("Failed to fetch tasks");
+    throw new Error("Không thể tải danh sách nhiệm vụ");
   }
 
   const data = await response.json();
@@ -490,7 +550,7 @@ export async function updateTask(
   });
 
   if (!response.ok) {
-    throw new Error("Failed to update task");
+    throw new Error("Không thể cập nhật nhiệm vụ");
   }
 
   return response.json();
@@ -512,7 +572,7 @@ export async function getAssignees(token: string): Promise<Assignee[]> {
   });
 
   if (!response.ok) {
-    throw new Error("Failed to fetch assignees");
+    throw new Error("Không thể tải danh sách người được phân công");
   }
 
   return response.json();
@@ -537,20 +597,167 @@ export async function changePassword(
   );
 
   if (!response.ok) {
-    throw new Error("Failed to change password");
+    throw new Error("Không thể thay đổi mật khẩu");
   }
 }
 
 export const Permissions = {
-  VIEW_DEVICES: "view_devices",
-  CONTROL_DEVICES: "control_devices",
-  MANAGE_DEVICES: "manage_devices",
-  VIEW_USERS: "view_users",
-  MANAGE_USERS: "manage_users",
-  VIEW_ROLES: "view_roles",
-  MANAGE_ROLES: "manage_roles",
-  VIEW_AUDIT: "view_audit",
-  VIEW_ENERGY: "view_energy",
+  VIEW_DEVICES: "xem_thiet_bi",
+  CONTROL_DEVICES: "dieu_khien_thiet_bi",
+  MANAGE_DEVICES: "quan_ly_thiet_bi",
+  VIEW_USERS: "xem_nguoi_dung",
+  MANAGE_USERS: "quan_ly_nguoi_dung",
+  VIEW_ROLES: "xem_vai_tro",
+  MANAGE_ROLES: "quan_ly_vai_tro",
+  VIEW_AUDIT: "xem_nhat_ky",
+  VIEW_ENERGY: "xem_nang_luong",
 } as const;
 
+// Firmware interfaces
+export interface FirmwareMetadata {
+  version: string;
+  filename: string;
+  upload_date: string;
+}
+
+// Get latest firmware version
+export async function getLatestFirmware(token: string): Promise<FirmwareMetadata> {
+  const response = await fetch(`${NEXT_PUBLIC_API_URL}/firmware/latest/`, {
+    headers: {
+      accept: "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  try {
+    if (!response.ok) {
+      throw new Error("Không thể tải phiên bản firmware mới nhất");
+    }
+
+    return response.json();
+  } catch (error) {
+    throw new Error("Lỗi khi tải phiên bản firmware: " + (error as Error).message);
+  }
+}
+
+// Upload new firmware
+export async function uploadFirmware(
+  token: string,
+  version: string,
+  file: File
+): Promise<FirmwareMetadata> {
+  const formData = new FormData();
+  formData.append("version", version);
+  formData.append("file", file);
+
+  const response = await fetch(`${NEXT_PUBLIC_API_URL}/firmware/upload/`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: formData,
+  });
+
+  try {
+    if (!response.ok) {
+      throw new Error("Không thể tải lên firmware mới");
+    }
+
+    return response.json();
+  } catch (error) {
+    throw new Error("Lỗi khi tải lên firmware: " + (error as Error).message);
+  }
+}
+
+// Update firmware for a specific device
+export async function updateDeviceFirmware(
+  token: string,
+  deviceId: string,
+  version: string
+): Promise<void> {
+  const response = await fetch(
+    `${NEXT_PUBLIC_API_URL}/firmware/update/${deviceId}?version=${version}`,
+    {
+      method: "PUT",
+      headers: {
+        accept: "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
+  try {
+    if (!response.ok) {
+      throw new Error("Không thể cập nhật firmware cho thiết bị");
+    }
+  } catch (error) {
+    throw new Error("Lỗi khi cập nhật firmware thiết bị: " + (error as Error).message);
+  }
+}
+
+// Mass update firmware for multiple devices
+export async function massUpdateFirmware(
+  token: string,
+  version: string
+): Promise<void> {
+  const response = await fetch(`${NEXT_PUBLIC_API_URL}/firmware/update/`, {
+    method: "PUT",
+    headers: {
+      accept: "application/json",
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ version }),
+  });
+
+  try {
+    if (!response.ok) {
+      throw new Error("Không thể cập nhật hàng loạt firmware");
+    }
+  } catch (error) {
+    throw new Error("Lỗi khi cập nhật hàng loạt firmware: " + (error as Error).message);
+  }
+}
+
 export type Permission = typeof Permissions[keyof typeof Permissions];
+
+export async function createRole(
+  token: string,
+  data: { name: string; permissions: string[] }
+): Promise<Role> {
+  const response = await fetch(`${NEXT_PUBLIC_API_URL}/roles/`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    throw new Error("Không thể tạo vai trò mới");
+  }
+
+  return response.json();
+}
+
+export async function updateRole(
+  token: string,
+  roleId: string,
+  data: { name: string; permissions: string[] }
+): Promise<Role> {
+  const response = await fetch(`${NEXT_PUBLIC_API_URL}/roles/${roleId}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    throw new Error("Không thể cập nhật vai trò");
+  }
+
+  return response.json();
+}

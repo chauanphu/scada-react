@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useWebSocket } from "../contexts/WebsocketProvider";
 import { useAPI } from "../contexts/APIProvider";
 import { Permissions } from "../lib/api";
@@ -7,7 +7,9 @@ import { DeviceList } from "../components/DeviceList";
 import { DeviceMap } from "../components/DeviceMap";
 import { DeviceDetails } from "../components/DeviceDetails";
 import { useToast } from "../contexts/ToastProvider";
-import { UserRole } from "../lib/api";
+import { UserRole, NEXT_PUBLIC_API_URL } from "../lib/api";
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+
 class ErrorBoundary extends React.Component<
   { children: React.ReactNode },
   { hasError: boolean }
@@ -25,7 +27,7 @@ class ErrorBoundary extends React.Component<
     if (this.state.hasError) {
       return (
         <div className="flex items-center justify-center h-full text-red-500">
-          Error loading map. Please refresh the page.
+          Lỗi khi tải bản đồ. Vui lòng tải lại trang.
         </div>
       );
     }
@@ -39,27 +41,69 @@ export const HomePage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
   const { addToast } = useToast();
+  const [reportData, setReportData] = useState<any>(null);
+  const [showDeviceList, setShowDeviceList] = useState(false); 
+
+  useEffect(() => {
+    if (selectedDevice) {
+      fetchReportData();
+    }
+  }, [selectedDevice]);
+
+  const fetchReportData = async () => {
+    if (!selectedDevice || !apiContext?.token) return;
+    
+    try {
+      const now = new Date();
+      const startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000); // 24 giờ trước
+      
+      const response = await fetch(
+        `${NEXT_PUBLIC_API_URL}/report/?device_id=${selectedDevice._id}&start_date=${startDate.toISOString()}&end_date=${now.toISOString()}&aggregation=hourly`,
+        {
+          headers: {
+            Authorization: `Bearer ${apiContext.token}`,
+          },
+        }
+      );
+
+      if (!response.ok) throw new Error('Không thể tải báo cáo');
+      
+      const data = await response.json();
+      setReportData(data);
+    } catch (error) {
+      console.error('Lỗi khi tải báo cáo:', error);
+      addToast('error', 'Không thể tải báo cáo thiết bị');
+    }
+  };
+
   if (apiContext.userRole !== UserRole.SUPERADMIN) {
-  if (!wsContext || !apiContext || !apiContext.hasPermission(Permissions.VIEW_DEVICES)) {
-    addToast("error", "Bạn không có quyền xem thiết bị");
-    return null;
-  }}
+    if (
+      !wsContext ||
+      !apiContext ||
+      !apiContext.hasPermission(Permissions.VIEW_DEVICES)
+    ) {
+      addToast("error", "Bạn không có quyền xem thiết bị");
+      return null;
+    }
+  }
 
-  const { devices, deviceStatuses } = wsContext;
+  if (!wsContext) return null;
 
-  const filteredDevices = devices.filter((device) =>
+  const { devices } = wsContext;
+
+  const filteredDevices = devices.filter((device: any) =>
     device.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleDeviceSelect = (device: Device) => {
+  const handleDeviceSelect = (device: Device | null) => {
     setSelectedDevice(device);
   };
 
   return (
     <div className="flex flex-col h-[calc(100vh-8rem)] -mt-8 -mx-4 pt-6">
       <div className="flex flex-1 overflow-hidden">
-        <div className="w-1/4 h-[47%] overflow-y-hidden rounded-lg translate-y-7 bg-white shadow-lg">
-          <div className="p-4 pt-8">
+        <div className="w-1/4 overflow-y-hidden rounded-lg translate-y-7 hidden md:block">
+          <div className="p-4 pt-8 bg-white shadow-lg rounded-lg">
             <input
               type="text"
               placeholder="Tìm kiếm thiết bị..."
@@ -67,12 +111,13 @@ export const HomePage: React.FC = () => {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
-            <DeviceList
-              devices={filteredDevices}
-              deviceStatuses={deviceStatuses}
-              onDeviceSelect={handleDeviceSelect}
-              selectedDevice={selectedDevice}
-            />
+            <div className="overflow-y-scroll h-[68vh] max-h-[68vh] ">
+              <DeviceList
+                devices={filteredDevices}
+                onDeviceSelect={handleDeviceSelect}
+                selectedDevice={selectedDevice}
+              />
+            </div>
           </div>
         </div>
         <div className="flex-1 p-8 bg-gray-100 overflow-y-hidden">
@@ -81,18 +126,18 @@ export const HomePage: React.FC = () => {
               <ErrorBoundary>
                 <DeviceMap
                   devices={devices}
-                  deviceStatuses={deviceStatuses}
                   onDeviceSelect={handleDeviceSelect}
+                  selectedDevice={selectedDevice}
                 />
               </ErrorBoundary>
             </div>
           </div>
           <div className="h-1/2">
-            <div className="h-full bg-white rounded-lg shadow-lg overflow-hidden">
+            <div className="h-full bg-white rounded-lg shadow-lg overflow-y-scroll">
               {selectedDevice ? (
                 <DeviceDetails
                   device={selectedDevice}
-                  deviceStatus={deviceStatuses[selectedDevice._id]}
+                  deviceStatus={wsContext.deviceStatuses[selectedDevice._id]}
                 />
               ) : (
                 <div className="flex items-center justify-center h-full text-gray-500">
@@ -101,6 +146,42 @@ export const HomePage: React.FC = () => {
               )}
             </div>
           </div>
+          <div className="md:hidden absolute place-content-center pt-5 justify-self-center">
+            <div className=""></div>
+            <button
+              className="w-full p-2 bg-blue-500 text-white rounded self-center focus:outline-none focus:ring-2 focus:ring-blue-500"
+              onClick={() => setShowDeviceList(true)}
+            >
+              Tìm kiếm thiết bị
+            </button>
+          {showDeviceList && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center pt-[100%] z-50">
+              <div className="bg-white p-4 rounded-lg shadow-lg w-11/12 max-h-[80vh] overflow-y-scroll">
+                <button
+                  className="top-2 right-2 text-4xl text-gray-500"
+                  onClick={() => setShowDeviceList(false)}
+                >
+                  &times;
+                </button>
+                <input
+                  type="text"
+                  placeholder="Tìm kiếm thiết bị..."
+                  className="w-full p-2 mb-4 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+                <DeviceList
+                  devices={filteredDevices}
+                  onDeviceSelect={(device) => {
+                    handleDeviceSelect(device);
+                    setShowDeviceList(false);
+                  }}
+                  selectedDevice={selectedDevice}
+                />
+              </div>
+            </div>
+          )}
+        </div>
         </div>
       </div>
     </div>

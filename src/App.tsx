@@ -6,11 +6,13 @@ import { DevicesPage } from "./pages/DevicesPage";
 import { UsersPage } from "./pages/UsersPage";
 import { RolesPage } from "./pages/RolesPage";
 import { AuditPage } from "./pages/AuditPage";
+import { FirmwarePage } from "./pages/FirmwarePage";
 import { APIProvider } from "./contexts/APIProvider";
 import { WebSocketProvider } from "./contexts/WebsocketProvider";
 import { ToastProvider } from "./contexts/ToastProvider";
 import RootLayout from "./RootLayout";
 
+// Ứng dụng chính
 function App() {
   return (
     <Router>
@@ -25,6 +27,7 @@ function App() {
                 <Route path="users" element={<UsersPage />} />
                 <Route path="roles" element={<RolesPage />} />
                 <Route path="audit" element={<AuditPage />} />
+                <Route path="firmware" element={<FirmwarePage />} />
               </Route>
             </Routes>
           </WebSocketProvider>

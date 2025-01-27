@@ -13,6 +13,7 @@ export const Navbar: React.FC = () => {
   const apiContext = useAPI();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   if (!apiContext) {
     return null;
@@ -24,27 +25,32 @@ export const Navbar: React.FC = () => {
     {
       name: "Trang chủ",
       href: "/",
-      permission: "view",
+      permission: "/",
     },
     {
       name: "Thiết bị",
       href: "/devices",
-      permission: "view",
+      permission: "/devices",
     },
     {
       name: "Người dùng",
       href: "/users",
-      permission: "view",
+      permission: "/users",
     },
     {
       name: "Phân quyền",
       href: "/roles",
-      permission: "view",
+      permission: "/roles",
     },
     {
       name: "Nhật ký",
       href: "/audit",
-      permission: "view",
+      permission: "/audit",
+    },
+    {
+      name: "Cập nhật firmware",
+      href: "/firmware",
+      permission: "/firmware",
     },
   ];
 
@@ -55,17 +61,13 @@ export const Navbar: React.FC = () => {
           <div className="flex">
             <div className="flex-shrink-0 flex items-center">
               <img
-                className="block lg:hidden h-8 w-auto"
-                src="/logo.png"
-                alt="Logo"
-              />
-              <img
-                className="hidden lg:block h-8 w-auto"
+                className="h-8 w-auto"
                 src="/logo.png"
                 alt="Logo"
               />
             </div>
-            <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
+            {/* Desktop menu */}
+            <div className="hidden md:ml-6 md:flex md:space-x-8">
               {tabs.map(
                 (tab) =>
                   hasPermission(tab.permission) && (
@@ -84,7 +86,30 @@ export const Navbar: React.FC = () => {
               )}
             </div>
           </div>
-          <div className="flex items-center">
+
+          {/* Mobile menu button */}
+          <div className="md:hidden flex items-center">
+            <button
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500"
+              aria-expanded="false"
+            >
+              <span className="sr-only">Mở menu</span>
+              {/* Icon when menu is closed */}
+              {!isMenuOpen ? (
+                <svg className="block h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              ) : (
+                <svg className="block h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              )}
+            </button>
+          </div>
+
+          {/* Desktop notifications and logout */}
+          <div className="hidden md:flex items-center">
             <div className="relative">
               <button
                 onClick={() => setShowNotifications(!showNotifications)}
@@ -145,6 +170,39 @@ export const Navbar: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* Mobile menu panel */}
+        {isMenuOpen && (
+          <div className="md:hidden">
+            <div className="pt-2 pb-3 space-y-1">
+              {tabs.map(
+                (tab) =>
+                  hasPermission(tab.permission) && (
+                    <Link
+                      key={tab.href}
+                      to={tab.href}
+                      onClick={() => setIsMenuOpen(false)}
+                      className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
+                        location.pathname === tab.href
+                          ? "border-indigo-500 text-indigo-700 bg-indigo-50"
+                          : "border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700"
+                      }`}
+                    >
+                      {tab.name}
+                    </Link>
+                  )
+              )}
+              <div className="mt-3 px-3 pt-4 pb-3 border-t border-gray-200">
+                <button
+                  onClick={() => apiContext.logout()}
+                  className="w-full flex items-center justify-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-red-400 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                >
+                  Đăng xuất
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </nav>
   );

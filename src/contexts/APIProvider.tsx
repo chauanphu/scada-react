@@ -19,17 +19,26 @@ import {
     UserRole,
     TokenResponse,
     Device,
-    CreateDeviceData
+    CreateDeviceData,
+    FirmwareMetadata,
+    getLatestFirmware,
+    uploadFirmware,
+    updateDeviceFirmware,
+    massUpdateFirmware,
+    toggleDevice,
+    setDeviceAuto,
+    setDeviceSchedule,
+    Schedule
 } from "../lib/api";
 import { useNavigate } from 'react-router-dom';
 import Cookies from "js-cookie";
 
 // Define role-based permissions
 const ROLE_PERMISSIONS = {
-  [UserRole.SUPERADMIN]: ['view', 'edit', 'delete', 'create', 'control', 'monitor'],
-  [UserRole.ADMIN]: ['view', 'edit', 'create', 'control', 'monitor'],
-  [UserRole.OPERATOR]: ['view', 'control', 'monitor'],
-  [UserRole.MONITOR]: ['view', 'monitor']
+  [UserRole.SUPERADMIN]: ['/', '/devices', '/users', '/roles', '/audit', '/firmware'],
+  [UserRole.ADMIN]: ['/', '/devices', '/users', '/audit', '/firmware'],
+  [UserRole.OPERATOR]: ['/', '/devices', '/firmware'],
+  [UserRole.MONITOR]: ['/']
 };
 
 interface APIContextType {
@@ -40,7 +49,7 @@ interface APIContextType {
     permissions: string[];
     login: (username: string, password: string) => Promise<void>;
     logout: () => void;
-    hasPermission: (permission: string) => boolean;
+    hasPermission: (path: string) => boolean;
     getUsers: () => Promise<User[]>;
     createUser: (userData: Partial<User>) => Promise<User>;
     updateUser: (userId: number, userData: Partial<User>) => Promise<User>;
@@ -49,10 +58,18 @@ interface APIContextType {
     createDevice: (deviceData: CreateDeviceData) => Promise<Device>;
     updateDevice: (deviceId: string, deviceData: Partial<CreateDeviceData>) => Promise<Device>;
     deleteDevice: (deviceId: string) => Promise<Device>;
+    toggleDevice: (deviceId: string, state: boolean) => Promise<void>;
+    setDeviceAuto: (deviceId: string, auto: boolean) => Promise<void>;
+    setDeviceSchedule: (deviceId: string, schedule: Schedule) => Promise<void>;
     getEnergyData: (deviceId: string, view: View) => Promise<any>;
     getRoles: () => Promise<any>;
     getAuditLogs: (page?: number, page_size?: number) => Promise<any>;
     downloadCSVAudit: () => Promise<any>;
+    // Firmware operations
+    getLatestFirmware: () => Promise<FirmwareMetadata>;
+    uploadFirmware: (version: string, file: File) => Promise<FirmwareMetadata>;
+    updateDeviceFirmware: (deviceId: string, version: string) => Promise<void>;
+    massUpdateFirmware: (version: string) => Promise<void>;
 }
 
 const APIContext = createContext<APIContextType | undefined>(undefined);
@@ -90,7 +107,7 @@ export function APIProvider({ children }: { children: ReactNode }) {
             setToken(access_token);
             setUserRole(role);
             setTenantId(tenant_id || null);
-            setPermissions(ROLE_PERMISSIONS[role]);
+            setPermissions(ROLE_PERMISSIONS[role] || []);
             setIsAuthenticated(true);
             
             // Set cookie with token
@@ -113,8 +130,9 @@ export function APIProvider({ children }: { children: ReactNode }) {
         navigate('/login');
     };
 
-    const hasPermission = (permission: string): boolean => {
-        return permissions.includes(permission);
+    const hasPermission = (path: string): boolean => {
+        if (userRole === UserRole.SUPERADMIN) return true;
+        return permissions.includes(path);
     };
 
     const value = {
@@ -134,10 +152,19 @@ export function APIProvider({ children }: { children: ReactNode }) {
         createDevice: (deviceData: CreateDeviceData) => createDevice(token || '', deviceData),
         updateDevice: (deviceId: string, deviceData: Partial<CreateDeviceData>) => updateDevice(token || '', deviceId, deviceData),
         deleteDevice: (deviceId: string) => deleteDevice(token || '', deviceId),
+        // Device control
+        toggleDevice: (deviceId: string, state: boolean) => toggleDevice(token || '', deviceId, state),
+        setDeviceAuto: (deviceId: string, auto: boolean) => setDeviceAuto(token || '', deviceId, auto),
+        setDeviceSchedule: (deviceId: string, schedule: Schedule) => setDeviceSchedule(token || '', deviceId, schedule),
         getEnergyData: (deviceId: string, view: View) => getEnergyData(token || '', deviceId, view),
         getRoles: () => getRoles(token || ''),
         getAuditLogs: (page?: number, page_size?: number) => getAuditLogs(token || '', page, page_size),
         downloadCSVAudit: () => downloadCSVAudit(token || ''),
+        // Firmware functions
+        getLatestFirmware: () => getLatestFirmware(token || ''),
+        uploadFirmware: (version: string, file: File) => uploadFirmware(token || '', version, file),
+        updateDeviceFirmware: (deviceId: string, version: string) => updateDeviceFirmware(token || '', deviceId, version),
+        massUpdateFirmware: (version: string) => massUpdateFirmware(token || '', version),
     };
 
     return <APIContext.Provider value={value}>{children}</APIContext.Provider>;

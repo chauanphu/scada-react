@@ -3,11 +3,13 @@ import React, {
   useContext,
   useState,
   useEffect,
+  useRef,
+  useCallback,
   ReactNode,
 } from "react";
 import { useAPI } from "./APIProvider";
-import { getDevices, NEXT_PUBLIC_WS_URL, setCommand } from "../lib/api";
-import { Device, Schedule, DeviceStatus } from "../types/Cluster";
+import { Device, DeviceStatus } from "../types/Cluster";
+import { NEXT_PUBLIC_WS_URL } from "../lib/api";
 import { useToast } from './ToastProvider';
 
 interface WebSocketContextType {
@@ -15,11 +17,8 @@ interface WebSocketContextType {
   deviceStatuses: { [key: string]: DeviceStatus };
   selectedDevice: Device | null;
   setSelectedDevice: React.Dispatch<React.SetStateAction<Device | null>>;
-  toggleDevice: (deviceId: string) => Promise<void>;
-  toggleAutomatic: (deviceId: string) => void;
-  disableAutomatic: (deviceId: string) => void;
-  sendCommand: (deviceId: string, type: "toggle" | "schedule" | "auto", payload: boolean | Schedule) => Promise<void>;
-  sendMessage: (deviceId: string, message: string) => void;
+  connectWebSocket: () => void;
+  disconnectWebSocket: () => void;
 }
 
 const WebSocketContext = createContext<WebSocketContextType | null>(null);
@@ -32,172 +31,183 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
   children,
 }) => {
   const apiContext = useAPI();
-  const token = apiContext?.token || "";
-  const isAuthenticated = apiContext?.isAuthenticated;
   const [devices, setDevices] = useState<Device[]>([]);
-  const [sockets, setSockets] = useState<Map<string, WebSocket>>(new Map());
   const [deviceStatuses, setDeviceStatus] = useState<{ [key: string]: DeviceStatus }>({});
   const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
+  const wsRef = useRef<WebSocket | null>(null);
   const { addToast } = useToast();
+  const reconnectTimeoutRef = useRef<NodeJS.Timeout>();
+  const isFirstConnectRef = useRef(true);
+  const connectionAttemptsRef = useRef(0);
+  const maxReconnectAttempts = 5;
 
-  useEffect(() => {
-    if (isAuthenticated && token) {
-      fetchDevices(token);
-    }
-  }, [isAuthenticated, token]);
+  const handleDeviceStatus = useCallback((deviceStatus: DeviceStatus) => {
+    if (!deviceStatus?.device_id) return;
 
-  useEffect(() => {
-    if (isAuthenticated && token && devices.length > 0) {
-      const newSockets = new Map<string, WebSocket>();
-      devices.forEach((device) => {
-        const ws = connectWebSocket(device._id);
-        newSockets.set(device._id, ws);
-      });
-      setSockets(newSockets);
+    // console.log('Processing device status:', deviceStatus);
 
-      return () => {
-        newSockets.forEach((ws) => ws.close());
-      };
-    }
-  }, [isAuthenticated, token, devices]);
+    // Update device status
+    setDeviceStatus(prev => ({
+      ...prev,
+      [deviceStatus.device_id]: {
+        ...deviceStatus,
+        is_connected: true,
+      }
+    }));
 
-  useEffect(() => {
+    // Update device info in devices list
+    setDevices(prev => {
+      const index = prev.findIndex(d => d._id === deviceStatus.device_id);
+      if (index === -1) return prev;
+
+      const updatedDevices = [...prev];
+      const currentDevice = updatedDevices[index];
+
+      // Only update coordinates if they're provided and different
+      if (
+        deviceStatus.latitude !== undefined &&
+        deviceStatus.longitude !== undefined &&
+        (deviceStatus.latitude !== currentDevice.latitude ||
+         deviceStatus.longitude !== currentDevice.longitude)
+      ) {
+        // console.log(`Updating coordinates for device ${currentDevice._id}:`, {
+        //   lat: deviceStatus.latitude,
+        //   lng: deviceStatus.longitude
+        // });
+        
+        updatedDevices[index] = {
+          ...currentDevice,
+          latitude: deviceStatus.latitude,
+          longitude: deviceStatus.longitude,
+          name: deviceStatus.device_name || currentDevice.name,
+        };
+        return updatedDevices;
+      }
+      
+      return prev;
+    });
+  }, []);
+
+  const fetchDevices = useCallback(async () => {
     if (!apiContext?.token) return;
+    
+    try {
+      // console.log('Fetching initial devices...');
+      const data = await apiContext.getDevices();
+      // console.log('Fetched devices:', data);
+      setDevices(data);
+    } catch (error) {
+      // console.error('Error fetching devices:', error);
+      addToast('error', 'Could not load devices');
+    }
+  }, [apiContext, addToast]);
 
-    const ws = new WebSocket(`${NEXT_PUBLIC_WS_URL}/ws?token=${apiContext.token}`);
+  const connectWebSocket = useCallback(() => {
+    if (!apiContext?.token || wsRef.current?.readyState === WebSocket.OPEN) {
+      return;
+    }
+
+    const wsUrl = `${NEXT_PUBLIC_WS_URL}/api/ws/monitor/?token=${apiContext.token}`;
+    // console.log('Connecting to WebSocket:', wsUrl);
+    
+    const ws = new WebSocket(wsUrl);
+    wsRef.current = ws;
 
     ws.onopen = () => {
-      console.log('WebSocket connected');
-      addToast('success', 'Connected to server');
+      // console.log('WebSocket connected successfully');
+      connectionAttemptsRef.current = 0;
+      if (isFirstConnectRef.current) {
+        isFirstConnectRef.current = false;
+        fetchDevices();
+      }
     };
 
-    ws.onclose = () => {
-      console.log('WebSocket disconnected');
-      addToast('error', 'Disconnected from server');
+    ws.onclose = (event) => {
+      // console.log('WebSocket disconnected:', event);
+      wsRef.current = null;
+
+      // Attempt reconnection if we have a selected device and haven't exceeded max attempts
+      if (!reconnectTimeoutRef.current && selectedDevice && connectionAttemptsRef.current < maxReconnectAttempts) {
+        connectionAttemptsRef.current++;
+        const delay = Math.min(1000 * Math.pow(2, connectionAttemptsRef.current), 30000);
+        
+        // console.log(`Reconnect attempt ${connectionAttemptsRef.current} in ${delay}ms`);
+        
+        reconnectTimeoutRef.current = setTimeout(() => {
+          reconnectTimeoutRef.current = undefined;
+          connectWebSocket();
+        }, delay);
+      }
     };
 
     ws.onerror = (error) => {
       console.error('WebSocket error:', error);
-      addToast('error', 'Connection error');
     };
 
     ws.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      if (!data) return;
+      try {
+        const messageArray = JSON.parse(event.data);
+        if (!Array.isArray(messageArray) || messageArray.length === 0) {
+          console.warn('Invalid message format:', messageArray);
+          return;
+        }
 
-      setDeviceStatus((prevState) => ({
-        ...prevState,
-        [data.device_id]: {
-          ...prevState[data.device_id],
-          ...data,
-        },
-      }));
+        const deviceStatus = JSON.parse(messageArray[0]);
+        if (!deviceStatus?.device_id) {
+          console.warn('Invalid device status:', deviceStatus);
+          return;
+        }
+
+        handleDeviceStatus(deviceStatus);
+      } catch (error) {
+        console.error('Error processing WebSocket message:', error);
+      }
     };
+  }, [apiContext?.token, selectedDevice, fetchDevices, handleDeviceStatus]);
 
+  const disconnectWebSocket = useCallback(() => {
+    if (wsRef.current) {
+      // console.log('Disconnecting WebSocket...');
+      wsRef.current.close();
+      wsRef.current = null;
+    }
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = undefined;
+    }
+    connectionAttemptsRef.current = 0;
+  }, []);
+
+  // Initialize WebSocket when authenticated
+  useEffect(() => {
+    if (apiContext?.isAuthenticated) {
+      // console.log('Authenticated, initializing WebSocket...');
+      fetchDevices();
+      connectWebSocket();
+    }
     return () => {
-      ws.close();
+      disconnectWebSocket();
     };
-  }, [apiContext?.token, addToast]);
+  }, [apiContext?.isAuthenticated, fetchDevices, connectWebSocket, disconnectWebSocket]);
 
-  const connectWebSocket = (deviceId: string) => {
-    const ws = new WebSocket(
-      `${NEXT_PUBLIC_WS_URL}/ws/devices/${deviceId}?token=${token}`
-    );
-
-    ws.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      if (!data) return;
-
-      setDeviceStatus((prevState) => ({
-        ...prevState,
-        [deviceId]: {
-          ...prevState[deviceId],
-          ...data,
-        },
-      }));
-    };
-
-    return ws;
-  };
-
-  const fetchDevices = async (token: string) => {
-    const data = await getDevices(token);
-    setDevices(data);
-  };
-
-  const sendMessage = (deviceId: string, message: string) => {
-    const ws = sockets.get(deviceId);
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({ message }));
-    } else {
-      console.warn(`WebSocket for device ${deviceId} is not open.`);
+  // Reconnect when a device is selected
+  useEffect(() => {
+    if (selectedDevice) {
+      // console.log('Device selected, ensuring connection...');
+      connectWebSocket();
     }
+  }, [selectedDevice, connectWebSocket]);
+
+  const value = {
+    devices,
+    deviceStatuses,
+    selectedDevice,
+    setSelectedDevice,
+    connectWebSocket,
+    disconnectWebSocket,
   };
 
-  const toggleDevice = async (deviceId: string) => {
-    const status = deviceStatuses[deviceId];
-    if (status) {
-      await setCommand(token, deviceId, "toggle", !status.is_on);
-      setDeviceStatus((prevState) => ({
-        ...prevState,
-        [deviceId]: { ...status, is_on: !status.is_on, is_auto: false },
-      }));
-    }
-  };
-
-  const disableAutomatic = (deviceId: string) => {
-    const status = deviceStatuses[deviceId];
-    if (status) {
-      setDeviceStatus((prevState) => ({
-        ...prevState,
-        [deviceId]: { ...status, is_auto: false },
-      }));
-    }
-  };
-
-  const toggleAutomatic = (deviceId: string) => {
-    const status = deviceStatuses[deviceId];
-    if (status) {
-      setDeviceStatus((prevState) => ({
-        ...prevState,
-        [deviceId]: { ...status, is_auto: !status.is_auto },
-      }));
-    }
-  };
-
-  const sendCommand = async (deviceId: string, type: "toggle" | "schedule" | "auto", payload: boolean | Schedule) => {
-    await setCommand(token, deviceId, type, payload);
-    const status = deviceStatuses[deviceId];
-    if (status) {
-      setDeviceStatus((prevState) => ({
-        ...prevState,
-        [deviceId]: {
-          ...status,
-          ...(type === "toggle" && { is_on: payload as boolean, is_auto: false }),
-          ...(type === "auto" && { is_auto: payload as boolean }),
-          ...(type === "schedule" && { schedule: payload as Schedule }),
-        },
-      }));
-    }
-  };
-
-  return (
-    <WebSocketContext.Provider
-      value={{
-        devices,
-        deviceStatuses,
-        selectedDevice,
-        setSelectedDevice,
-        toggleDevice,
-        toggleAutomatic,
-        disableAutomatic,
-        sendCommand,
-        sendMessage,
-      }}
-    >
-      {children}
-    </WebSocketContext.Provider>
-  );
+  return <WebSocketContext.Provider value={value}>{children}</WebSocketContext.Provider>;
 };
 
 export const useWebSocket = () => useContext(WebSocketContext);

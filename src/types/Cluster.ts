@@ -12,14 +12,25 @@ export interface Device {
 }
 
 export interface DeviceStatus {
-  is_on: boolean;
-  is_auto: boolean;
   is_connected: boolean;
-  power: number;
-  current: number;
+  mac: string;
+  device_id: string;
+  timestamp: string;
   voltage: number;
+  current: number;
+  power: number;
+  power_factor: number;
+  total_energy: number;
+  toggle: boolean;
+  device_name: string;
+  auto: boolean;
+  hour_on: number;
+  hour_off: number;
+  minute_on: number;
+  minute_off: number;
   latitude?: number;
   longitude?: number;
+  tenant_id: string;
   schedule?: Schedule;
 }
 

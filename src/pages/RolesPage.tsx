@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { useAPI } from "../contexts/APIProvider";
-import { Navbar } from "../components/NavBar";
-import { getRoles, Role, Permissions } from "../lib/api";
+import { getRoles, createRole, updateRole, Role, Permissions } from "../lib/api";
+import { Dialog } from "../components/ui/dialog";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { useToast } from "../hooks/use-toast";
 
 interface ExtendedRole extends Role {
   _id: string;
@@ -9,11 +12,104 @@ interface ExtendedRole extends Role {
   permissions: string[];
 }
 
+interface RoleModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmit: (data: { name: string; permissions: string[] }) => void;
+  initialData?: ExtendedRole;
+}
+
+const RoleModal: React.FC<RoleModalProps> = ({
+  isOpen,
+  onClose,
+  onSubmit,
+  initialData,
+}) => {
+  const [name, setName] = useState(initialData?.name || "");
+  const [selectedPermissions, setSelectedPermissions] = useState<string[]>(
+    initialData?.permissions || []
+  );
+
+  useEffect(() => {
+    if (initialData) {
+      setName(initialData.name);
+      setSelectedPermissions(initialData.permissions);
+    }
+  }, [initialData]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSubmit({ name, permissions: selectedPermissions });
+  };
+
+  const togglePermission = (permission: string) => {
+    setSelectedPermissions((prev) =>
+      prev.includes(permission)
+        ? prev.filter((p) => p !== permission)
+        : [...prev, permission]
+    );
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+      <div className="fixed inset-0 flex items-center justify-center">
+        <div className="bg-white rounded-lg p-6 w-full max-w-md">
+          <h2 className="text-xl font-semibold mb-4">
+            {initialData ? "Chỉnh sửa vai trò" : "Thêm vai trò mới"}
+          </h2>
+          <form onSubmit={handleSubmit}>
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-1">
+                Tên vai trò
+              </label>
+              <Input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="w-full"
+              />
+            </div>
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-2">
+                Quyền hạn
+              </label>
+              <div className="space-y-2">
+                {Object.values(Permissions).map((permission) => (
+                  <label key={permission} className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={selectedPermissions.includes(permission)}
+                      onChange={() => togglePermission(permission)}
+                      className="mr-2"
+                    />
+                    <span>{permission}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div className="flex justify-end space-x-2">
+              <Button variant="outline" onClick={onClose}>
+                Hủy
+              </Button>
+              <Button type="submit">
+                {initialData ? "Cập nhật" : "Tạo mới"}
+              </Button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </Dialog>
+  );
+};
+
 export const RolesPage: React.FC = () => {
   const apiContext = useAPI();
+  const { toast } = useToast();
   const [roles, setRoles] = useState<ExtendedRole[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [editingRole, setEditingRole] = useState<ExtendedRole | null>(null);
 
   useEffect(() => {
     fetchRoles();
@@ -26,17 +122,50 @@ export const RolesPage: React.FC = () => {
       setRoles(data as ExtendedRole[]);
       setError(null);
     } catch (err) {
-      setError("Failed to fetch roles");
+      setError("Không thể tải danh sách vai trò");
     } finally {
       setLoading(false);
     }
   };
 
-  const getPermissionLabel = (permission: string) => {
-    return permission
-      .split("_")
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-      .join(" ");
+  const handleCreateRole = async (data: { name: string; permissions: string[] }) => {
+    try {
+      const token = apiContext?.token || "";
+      await createRole(token, data);
+      await fetchRoles();
+      setIsCreateModalOpen(false);
+      toast({
+        title: "Thành công",
+        description: "Đã tạo vai trò mới",
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Lỗi",
+        description: "Không thể tạo vai trò mới",
+      });
+    }
+  };
+
+  const handleUpdateRole = async (data: { name: string; permissions: string[] }) => {
+    if (!editingRole) return;
+
+    try {
+      const token = apiContext?.token || "";
+      await updateRole(token, editingRole._id, data);
+      await fetchRoles();
+      setEditingRole(null);
+      toast({
+        title: "Thành công",
+        description: "Đã cập nhật vai trò",
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Lỗi",
+        description: "Không thể cập nhật vai trò",
+      });
+    }
   };
 
   return (
@@ -44,15 +173,10 @@ export const RolesPage: React.FC = () => {
       <div className="flex-1 p-6">
         <div className="max-w-7xl mx-auto">
           <div className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl font-bold">Tenants</h1>
-            <button
-              className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
-              onClick={() => {
-                // Open create role modal
-              }}
-            >
-              Add Role
-            </button>
+            <h1 className="text-2xl font-bold">Quản lý vai trò</h1>
+            <Button onClick={() => setIsCreateModalOpen(true)}>
+              Thêm vai trò
+            </Button>
           </div>
 
           {error && (
@@ -62,7 +186,7 @@ export const RolesPage: React.FC = () => {
           )}
 
           {loading ? (
-            <div>Loading...</div>
+            <div>Đang tải...</div>
           ) : (
             <div className="bg-white shadow overflow-hidden sm:rounded-lg">
               <ul className="divide-y divide-gray-200">
@@ -72,20 +196,16 @@ export const RolesPage: React.FC = () => {
                       <h3 className="text-lg font-medium text-gray-900">
                         {role.name}
                       </h3>
-                      <div className="flex space-x-2">
-                        <button
-                          className="text-indigo-600 hover:text-indigo-900"
-                          onClick={() => {
-                            // Open edit role modal
-                          }}
-                        >
-                          Edit
-                        </button>
-                      </div>
+                      <Button
+                        variant="outline"
+                        onClick={() => setEditingRole(role)}
+                      >
+                        Chỉnh sửa
+                      </Button>
                     </div>
                     <div className="mt-4">
                       <h4 className="text-sm font-medium text-gray-500">
-                        Permissions
+                        Quyền hạn
                       </h4>
                       <div className="mt-2 flex flex-wrap gap-2">
                         {role.permissions.map((permission) => (
@@ -93,7 +213,7 @@ export const RolesPage: React.FC = () => {
                             key={permission}
                             className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800"
                           >
-                            {getPermissionLabel(permission)}
+                            {permission}
                           </span>
                         ))}
                       </div>
@@ -105,6 +225,25 @@ export const RolesPage: React.FC = () => {
           )}
         </div>
       </div>
+
+      {isCreateModalOpen && (
+        <RoleModal
+          isOpen={isCreateModalOpen}
+          onClose={() => setIsCreateModalOpen(false)}
+          onSubmit={handleCreateRole}
+        />
+      )}
+
+      {editingRole && (
+        <RoleModal
+          isOpen={!!editingRole}
+          onClose={() => setEditingRole(null)}
+          onSubmit={handleUpdateRole}
+          initialData={editingRole}
+        />
+      )}
     </div>
   );
-}; 
+};
+
+export default RolesPage;
