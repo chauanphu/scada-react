@@ -1,4 +1,3 @@
-import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import LoginPage from "./pages/LoginPage";
 import { HomePage } from "./pages/HomePage";
@@ -12,7 +11,6 @@ import { WebSocketProvider } from "./contexts/WebsocketProvider";
 import { ToastProvider } from "./contexts/ToastProvider";
 import RootLayout from "./RootLayout";
 
-// Ứng dụng chính
 function App() {
   return (
     <Router>

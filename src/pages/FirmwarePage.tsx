@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useAPI } from "../contexts/APIProvider";
 import { Device, FirmwareMetadata } from "../lib/api";
 import { useToast } from "../hooks/use-toast";
@@ -6,7 +6,7 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 
-export const FirmwarePage: React.FC = () => {
+export const FirmwarePage = () => {
   const apiContext = useAPI();
   const { toast } = useToast();
   const [devices, setDevices] = useState<Device[]>([]);
@@ -17,36 +17,40 @@ export const FirmwarePage: React.FC = () => {
   const [latestFirmware, setLatestFirmware] = useState<FirmwareMetadata | null>(null);
   const [updateType, setUpdateType] = useState<"selected" | "all">("selected");
 
-  useEffect(() => {
-    void fetchDevices();
-    void fetchLatestFirmware();
-  }, []);
-
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const fetchDevices = async () => {
     try {
       const fetchedDevices = await apiContext.getDevices();
       setDevices(fetchedDevices);
     } catch (error) {
+       
       toast({
         variant: "destructive",
         title: "Lỗi",
-        description: "Không thể tải danh sách thiết bị"
+        description: "Không thể tải danh sách thiết bị" + error
       });
     }
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const fetchLatestFirmware = async () => {
     try {
       const firmware = await apiContext.getLatestFirmware();
       setLatestFirmware(firmware);
     } catch (error) {
+       
       toast({
         variant: "destructive",
         title: "Lỗi",
-        description: "Không thể tải thông tin firmware hiện tại"
+        description: "Không thể tải thông tin firmware hiện tại" + error
       });
     }
   };
+
+  useEffect(() => {
+    void fetchDevices();
+    void fetchLatestFirmware();
+  }, [fetchDevices, fetchLatestFirmware]);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -94,10 +98,11 @@ export const FirmwarePage: React.FC = () => {
       });
       void fetchLatestFirmware();
     } catch (error) {
+       
       toast({
         variant: "destructive",
         title: "Lỗi",
-        description: "Không thể tải lên firmware"
+        description: "Không thể tải lên firmware" + error
       });
     } finally {
       setLoading(false);
@@ -143,10 +148,11 @@ export const FirmwarePage: React.FC = () => {
         });
       }
     } catch (error) {
+       
       toast({
         variant: "destructive",
         title: "Lỗi",
-        description: "Không thể cập nhật firmware"
+        description: "Không thể cập nhật firmware" + error
       });
     } finally {
       setLoading(false);

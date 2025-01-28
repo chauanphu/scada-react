@@ -19,17 +19,16 @@ interface RoleModalProps {
   initialData?: ExtendedRole;
 }
 
-const RoleModal: React.FC<RoleModalProps> = ({
+const RoleModal = ({
   isOpen,
   onClose,
   onSubmit,
   initialData,
-}) => {
+}: RoleModalProps) => {
   const [name, setName] = useState(initialData?.name || "");
   const [selectedPermissions, setSelectedPermissions] = useState<string[]>(
     initialData?.permissions || []
   );
-
   useEffect(() => {
     if (initialData) {
       setName(initialData.name);
@@ -102,7 +101,10 @@ const RoleModal: React.FC<RoleModalProps> = ({
   );
 };
 
-export const RolesPage: React.FC = () => {
+ 
+
+
+export const RolesPage = () => {
   const apiContext = useAPI();
   const { toast } = useToast();
   const [roles, setRoles] = useState<ExtendedRole[]>([]);
@@ -111,38 +113,39 @@ export const RolesPage: React.FC = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingRole, setEditingRole] = useState<ExtendedRole | null>(null);
 
-  useEffect(() => {
-    fetchRoles();
-  }, []);
 
-  const fetchRoles = async () => {
-    try {
-      const token = apiContext?.token || "";
-      const data = await getRoles(token);
-      setRoles(data as ExtendedRole[]);
-      setError(null);
-    } catch (err) {
-      setError("Không thể tải danh sách vai trò");
-    } finally {
-      setLoading(false);
-    }
-  };
+  useEffect(() => {
+    const fetchRoles = async () => {
+      try {
+        const token = apiContext?.token || "";
+        const data = await getRoles(token);
+        setRoles(data as ExtendedRole[]);
+        setError(null);
+      } catch (err) {
+         
+        setError("Không thể tải danh sách vai trò" + err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchRoles();
+    }, [apiContext?.token]);
 
   const handleCreateRole = async (data: { name: string; permissions: string[] }) => {
     try {
       const token = apiContext?.token || "";
       await createRole(token, data);
-      await fetchRoles();
       setIsCreateModalOpen(false);
       toast({
         title: "Thành công",
         description: "Đã tạo vai trò mới",
       });
-    } catch (error) {
+    } catch (err) {
+       
       toast({
         variant: "destructive",
         title: "Lỗi",
-        description: "Không thể tạo vai trò mới",
+        description: "Không thể tạo vai trò mới" + err,
       });
     }
   };
@@ -153,17 +156,17 @@ export const RolesPage: React.FC = () => {
     try {
       const token = apiContext?.token || "";
       await updateRole(token, editingRole._id, data);
-      await fetchRoles();
       setEditingRole(null);
       toast({
         title: "Thành công",
         description: "Đã cập nhật vai trò",
       });
-    } catch (error) {
+    } catch (err) {
+       
       toast({
         variant: "destructive",
         title: "Lỗi",
-        description: "Không thể cập nhật vai trò",
+        description: "Không thể cập nhật vai trò" + err,
       });
     }
   };

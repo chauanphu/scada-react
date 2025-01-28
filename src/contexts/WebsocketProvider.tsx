@@ -21,7 +21,7 @@ interface WebSocketContextType {
   disconnectWebSocket: () => void;
 }
 
-const WebSocketContext = createContext<WebSocketContextType | null>(null);
+export const WebSocketContext = createContext<WebSocketContextType | null>(null);
 
 interface WebSocketProviderProps {
   children: ReactNode;
@@ -92,12 +92,11 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
     if (!apiContext?.token) return;
     
     try {
-      // console.log('Fetching initial devices...');
       const data = await apiContext.getDevices();
-      // console.log('Fetched devices:', data);
       setDevices(data);
-    } catch (error) {
-      // console.error('Error fetching devices:', error);
+    } catch (err) {
+       
+      console.error('Error fetching devices:', err);
       addToast('error', 'Could not load devices');
     }
   }, [apiContext, addToast]);
@@ -123,7 +122,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
     };
 
     ws.onclose = (event) => {
-      // console.log('WebSocket disconnected:', event);
+      console.log('WebSocket disconnected:', event);
       wsRef.current = null;
 
       // Attempt reconnection if we have a selected device and haven't exceeded max attempts
@@ -140,27 +139,30 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
       }
     };
 
-    ws.onerror = (error) => {
+    ws.onerror = (error: Event) => {
+       
       console.error('WebSocket error:', error);
     };
 
-    ws.onmessage = (event) => {
+    ws.onmessage = (event: MessageEvent) => {
+      let messageArray: unknown;
       try {
-        const messageArray = JSON.parse(event.data);
+        messageArray = JSON.parse(event.data);
         if (!Array.isArray(messageArray) || messageArray.length === 0) {
           console.warn('Invalid message format:', messageArray);
           return;
         }
 
-        const deviceStatus = JSON.parse(messageArray[0]);
+        const deviceStatus = JSON.parse(messageArray[0]) as DeviceStatus;
         if (!deviceStatus?.device_id) {
           console.warn('Invalid device status:', deviceStatus);
           return;
         }
 
         handleDeviceStatus(deviceStatus);
-      } catch (error) {
-        console.error('Error processing WebSocket message:', error);
+      } catch (err) {
+         
+        console.error('Error processing WebSocket message:', err);
       }
     };
   }, [apiContext?.token, selectedDevice, fetchDevices, handleDeviceStatus]);

@@ -14,9 +14,12 @@ interface DeviceMapProps {
   onDeviceSelect: (device: Device | null) => void;
 }
 
-const MapController: React.FC<{ devices: Device[]; selectedDevice: Device | null }> = ({ 
-  devices, 
-  selectedDevice 
+const MapController = ({
+  devices,
+  selectedDevice
+}: {
+  devices: Device[];
+  selectedDevice: Device | null;
 }) => {
   const map = useMap();
   
@@ -54,13 +57,20 @@ const MapController: React.FC<{ devices: Device[]; selectedDevice: Device | null
   return null;
 };
 
-export const DeviceMap: React.FC<DeviceMapProps> = ({
+interface DeviceStatus {
+  is_connected: boolean;
+  toggle: boolean;
+  auto: boolean;
+  power: number;
+}
+
+export const DeviceMap = ({
   devices,
   selectedDevice,
   onDeviceSelect,
-}) => {
+}: DeviceMapProps) => {
   const wsContext = useWebSocket();
-  const deviceStatuses = wsContext?.deviceStatuses || {};
+  const deviceStatuses: Record<string, DeviceStatus> = wsContext?.deviceStatuses || {};
 
   // console.log('Hiển thị bản đồ thiết bị:', {
   //   devices,

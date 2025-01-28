@@ -2,18 +2,18 @@ import React, { useEffect, useState } from "react";
 import { useAPI } from "../contexts/APIProvider";
 import {
   getUsers,
-  createUser,
-  updateUser,
+  // createUser,
+  // updateUser,
   deleteUser,
   User,
   Role,
   getRoles,
 } from "../lib/api";
-import { Dialog } from "../components/ui/dialog";
+// import { Dialog } from "../components/ui/dialog";
 import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
-import { Label } from "../components/ui/label";
-import { Select, SelectItem, SelectContent, SelectTrigger, SelectValue } from "../components/ui/select";
+// import { Input } from "../components/ui/input";
+// import { Label } from "../components/ui/label";
+// import { Select, SelectItem, SelectContent, SelectTrigger, SelectValue } from "../components/ui/select";
 import { useToast } from "../hooks/use-toast";
 
 interface ExtendedUser extends User {
@@ -21,129 +21,126 @@ interface ExtendedUser extends User {
   role: Role & { name: string };
 }
 
-interface UserModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSubmit: (data: {
-    username: string;
-    email: string;
-    password?: string;
-    role_id: number;
-  }) => void;
-  initialData?: ExtendedUser;
-  roles: Role[];
-}
+// interface UserModalProps {
+//   isOpen: boolean;
+//   onClose: () => void;
+//   onSubmit: (data: {
+//     username: string;
+//     email: string;
+//     password?: string;
+//     role_id: number;
+//   }) => void;
+//   initialData?: ExtendedUser;
+//   roles: Role[];
+// }
 
-const UserModal: React.FC<UserModalProps> = ({
-  isOpen,
-  onClose,
-  onSubmit,
-  initialData,
-  roles,
-}) => {
-  const [username, setUsername] = useState(initialData?.username || "");
-  const [email, setEmail] = useState(initialData?.email || "");
-  const [password, setPassword] = useState("");
-  const [roleId, setRoleId] = useState<number>(
-    initialData?.role.role_id ?? roles[0]?.role_id ?? 0
-  );
+// const UserModal: React.FC<UserModalProps> = ({
+//   isOpen,
+//   onClose,
+//   onSubmit,
+//   initialData,
+//   roles,
+// }) => {
+//   const [username, setUsername] = useState(initialData?.username || "");
+//   const [email, setEmail] = useState(initialData?.email || "");
+//   const [password, setPassword] = useState("");
+//   const [roleId, setRoleId] = useState<number>(
+//     initialData?.role.role_id ?? roles[0]?.role_id ?? 0
+//   );
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const data = {
-      username,
-      email,
-      role_id: roleId,
-      ...(initialData ? {} : { password }),
-    };
-    onSubmit(data);
-  };
+//   const handleSubmit = (e: React.FormEvent) => {
+//     e.preventDefault();
+//     const data = {
+//       username,
+//       email,
+//       role_id: roleId,
+//       ...(initialData ? {} : { password }),
+//     };
+//     onSubmit(data);
+//   };
 
-  return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
-      <div className="fixed inset-0 flex items-center justify-center">
-        <div className="bg-white rounded-lg p-6 w-full max-w-md">
-          <h2 className="text-xl font-semibold mb-4">
-            {initialData ? "Chỉnh sửa người dùng" : "Thêm người dùng mới"}
-          </h2>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <Label>Tên đăng nhập</Label>
-              <Input
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                required
-              />
-            </div>
-            <div>
-              <Label>Email</Label>
-              <Input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </div>
-            {!initialData && (
-              <div>
-                <Label>Mật khẩu</Label>
-                <Input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-              </div>
-            )}
-            <div>
-              <Label>Vai trò</Label>
-              <Select
-                value={roleId.toString()}
-                onValueChange={(value) => setRoleId(Number(value))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Chọn vai trò" />
-                </SelectTrigger>
-                <SelectContent>
-                  {roles.map((role) => (
-                    <SelectItem key={role.role_id} value={role.role_id.toString()}>
-                      {role.role_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex justify-end space-x-2">
-              <Button variant="outline" onClick={onClose} type="button">
-                Hủy
-              </Button>
-              <Button type="submit">
-                {initialData ? "Cập nhật" : "Tạo mới"}
-              </Button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </Dialog>
-  );
-};
+//   return (
+//     <Dialog open={isOpen} onOpenChange={onClose}>
+//       <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+//       <div className="fixed inset-0 flex items-center justify-center">
+//         <div className="bg-white rounded-lg p-6 w-full max-w-md">
+//           <h2 className="text-xl font-semibold mb-4">
+//             {initialData ? "Chỉnh sửa người dùng" : "Thêm người dùng mới"}
+//           </h2>
+//           <form onSubmit={handleSubmit} className="space-y-4">
+//             <div>
+//               <Label>Tên đăng nhập</Label>
+//               <Input
+//                 value={username}
+//                 onChange={(e) => setUsername(e.target.value)}
+//                 required
+//               />
+//             </div>
+//             <div>
+//               <Label>Email</Label>
+//               <Input
+//                 type="email"
+//                 value={email}
+//                 onChange={(e) => setEmail(e.target.value)}
+//                 required
+//               />
+//             </div>
+//             {!initialData && (
+//               <div>
+//                 <Label>Mật khẩu</Label>
+//                 <Input
+//                   type="password"
+//                   value={password}
+//                   onChange={(e) => setPassword(e.target.value)}
+//                   required
+//                 />
+//               </div>
+//             )}
+//             <div>
+//               <Label>Vai trò</Label>
+//               <Select
+//                 value={roleId.toString()}
+//                 onValueChange={(value) => setRoleId(Number(value))}
+//               >
+//                 <SelectTrigger>
+//                   <SelectValue placeholder="Chọn vai trò" />
+//                 </SelectTrigger>
+//                 <SelectContent>
+//                   {roles.map((role) => (
+//                     <SelectItem key={role.role_id} value={role.role_id.toString()}>
+//                       {role.role_name}
+//                     </SelectItem>
+//                   ))}
+//                 </SelectContent>
+//               </Select>
+//             </div>
+//             <div className="flex justify-end space-x-2">
+//               <Button variant="outline" onClick={onClose} type="button">
+//                 Hủy
+//               </Button>
+//               <Button type="submit">
+//                 {initialData ? "Cập nhật" : "Tạo mới"}
+//               </Button>
+//             </div>
+//           </form>
+//         </div>
+//       </div>
+//     </Dialog>
+//   );
+// };
 
 export const UsersPage: React.FC = () => {
   const apiContext = useAPI();
   const { toast } = useToast();
   const [users, setUsers] = useState<ExtendedUser[]>([]);
-  const [roles, setRoles] = useState<Role[]>([]);
+  const [, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [editingUser, setEditingUser] = useState<ExtendedUser | null>(null);
+   
+  const [, setIsCreateModalOpen] = useState(false);
+  const [, setEditingUser] = useState<ExtendedUser | null>(null);
 
-  useEffect(() => {
-    fetchUsers();
-    fetchRoles();
-  }, []);
-
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const fetchUsers = async () => {
     try {
       const token = apiContext?.token || "";
@@ -151,67 +148,80 @@ export const UsersPage: React.FC = () => {
       setUsers(data as ExtendedUser[]);
       setError(null);
     } catch (err) {
-      setError("Không thể tải danh sách người dùng");
+       
+      setError("Không thể tải danh sách người dùng, " + err);
     } finally {
       setLoading(false);
     }
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const fetchRoles = async () => {
     try {
       const token = apiContext?.token || "";
       const data = await getRoles(token);
       setRoles(data);
     } catch (err) {
+       
       toast({
         variant: "destructive",
         title: "Lỗi",
-        description: "Không thể tải danh sách vai trò",
+        description: `Không thể tải danh sách vai trò ${err}`,
       });
     }
   };
 
-  const handleCreateUser = async (userData: Partial<User>) => {
-    try {
-      const token = apiContext?.token || "";
-      await createUser(token, userData);
-      await fetchUsers();
-      setIsCreateModalOpen(false);
-      toast({
-        title: "Thành công",
-        description: "Đã tạo người dùng mới",
-      });
-    } catch (err) {
-      toast({
-        variant: "destructive",
-        title: "Lỗi",
-        description: "Không thể tạo người dùng mới",
-      });
-    }
-  };
+  useEffect(() => {
+    fetchUsers();
+    fetchRoles();
+  }, [fetchUsers, fetchRoles]);
 
-  const handleUpdateUser = async (userData: Partial<User>) => {
-    if (!editingUser) return;
+   
+  // const handleCreateUser = async (userData: Partial<User>) => {
+  //   try {
+  //     const token = apiContext?.token || "";
+  //     await createUser(token, userData);
+  //     await fetchUsers();
+  //     setIsCreateModalOpen(false);
+  //     toast({
+  //       title: "Thành công",
+  //       description: "Đã tạo người dùng mới",
+  //     });
+  //   } catch (err) {
+       
+  //     toast({
+  //       variant: "destructive",
+  //       title: "Lỗi",
+  //       description: "Không thể tạo người dùng mới",
+  //     });
+  //   }
+  // };
 
-    try {
-      const token = apiContext?.token || "";
-      await updateUser(token, Number(editingUser._id), userData);
-      await fetchUsers();
-      setEditingUser(null);
-      toast({
-        title: "Thành công",
-        description: "Đã cập nhật người dùng",
-      });
-    } catch (err) {
-      toast({
-        variant: "destructive",
-        title: "Lỗi",
-        description: "Không thể cập nhật người dùng",
-      });
-    }
-  };
+   
+  // const handleUpdateUser = async (userData: Partial<User>) => {
+  //   if (!editingUser) return;
+
+  //   try {
+  //     const token = apiContext?.token || "";
+  //     await updateUser(token, Number(editingUser._id), userData);
+  //     await fetchUsers();
+  //     setEditingUser(null);
+  //     toast({
+  //       title: "Thành công",
+  //       description: "Đã cập nhật người dùng",
+  //     });
+  //   } catch (err) {
+       
+  //     toast({
+  //       variant: "destructive",
+  //       title: "Lỗi",
+  //       description: "Không thể cập nhật người dùng",
+  //     });
+  //   }
+  // };
 
   const handleDeleteUser = async (id: number) => {
+     
     if (!confirm("Bạn có chắc chắn muốn xóa người dùng này?")) return;
 
     try {
@@ -223,10 +233,11 @@ export const UsersPage: React.FC = () => {
         description: "Đã xóa người dùng",
       });
     } catch (err) {
+       
       toast({
         variant: "destructive",
         title: "Lỗi",
-        description: "Không thể xóa người dùng",
+        description: `Không thể xóa người dùng ${err}`,
       });
     }
   };

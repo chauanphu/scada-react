@@ -2,13 +2,18 @@ import React, { useState, useEffect } from "react";
 import { useWebSocket } from "../contexts/WebsocketProvider";
 import { useAPI } from "../contexts/APIProvider";
 import { Permissions } from "../lib/api";
-import { Device, DeviceStatus } from "../types/Cluster";
+import { Device } from "../types/Cluster";
 import { DeviceList } from "../components/DeviceList";
 import { DeviceMap } from "../components/DeviceMap";
 import { DeviceDetails } from "../components/DeviceDetails";
 import { useToast } from "../contexts/ToastProvider";
 import { UserRole, NEXT_PUBLIC_API_URL } from "../lib/api";
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+
+interface ReportData {
+  timestamp: string;
+  power: number;
+  energy: number;
+}
 
 class ErrorBoundary extends React.Component<
   { children: React.ReactNode },
@@ -35,27 +40,22 @@ class ErrorBoundary extends React.Component<
   }
 }
 
-export const HomePage: React.FC = () => {
+export const HomePage = () => {
   const apiContext = useAPI();
   const wsContext = useWebSocket();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
   const { addToast } = useToast();
-  const [reportData, setReportData] = useState<any>(null);
-  const [showDeviceList, setShowDeviceList] = useState(false); 
+  const [, setReportData] = useState<ReportData[] | null>(null);
+  const [showDeviceList, setShowDeviceList] = useState(false);
 
-  useEffect(() => {
-    if (selectedDevice) {
-      fetchReportData();
-    }
-  }, [selectedDevice]);
-
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const fetchReportData = async () => {
     if (!selectedDevice || !apiContext?.token) return;
     
     try {
       const now = new Date();
-      const startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000); // 24 giờ trước
+      const startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
       
       const response = await fetch(
         `${NEXT_PUBLIC_API_URL}/report/?device_id=${selectedDevice._id}&start_date=${startDate.toISOString()}&end_date=${now.toISOString()}&aggregation=hourly`,
@@ -70,11 +70,17 @@ export const HomePage: React.FC = () => {
       
       const data = await response.json();
       setReportData(data);
-    } catch (error) {
-      console.error('Lỗi khi tải báo cáo:', error);
+    } catch (err) {
+      console.error('Lỗi khi tải báo cáo:', err);
       addToast('error', 'Không thể tải báo cáo thiết bị');
     }
   };
+
+  useEffect(() => {
+    if (selectedDevice) {
+      void fetchReportData();
+    }
+  }, [selectedDevice, fetchReportData]);
 
   if (apiContext.userRole !== UserRole.SUPERADMIN) {
     if (
@@ -91,8 +97,8 @@ export const HomePage: React.FC = () => {
 
   const { devices } = wsContext;
 
-  const filteredDevices = devices.filter((device: any) =>
-    device.name.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredDevices = devices.filter((device) =>
+    device.name?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false
   );
 
   const handleDeviceSelect = (device: Device | null) => {

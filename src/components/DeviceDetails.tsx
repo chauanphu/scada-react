@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Device } from "../lib/api";
 import { DeviceStatus } from "../types/Cluster";
 import { useAPI } from "../contexts/APIProvider";
@@ -10,10 +10,10 @@ interface DeviceDetailsProps {
   deviceStatus: DeviceStatus | undefined;
 }
 
-export const DeviceDetails: React.FC<DeviceDetailsProps> = ({
+export const DeviceDetails = ({
   device,
   deviceStatus,
-}) => {
+}: DeviceDetailsProps) => {
   const apiContext = useAPI();
   const wsContext = useWebSocket();
   const [loading, setLoading] = useState(false);
@@ -26,8 +26,9 @@ export const DeviceDetails: React.FC<DeviceDetailsProps> = ({
     setLoading(true);
     try {
       await apiContext.toggleDevice(device._id, !deviceStatus.toggle);
-    } catch (error) {
-      console.error("Lỗi khi thay đổi trạng thái:", error);
+    } catch (err) {
+       
+      console.error("Lỗi khi thay đổi trạng thái:", err);
       addToast("error", "Không thể thay đổi trạng thái");
     } finally {
       setLoading(false);
@@ -39,8 +40,9 @@ export const DeviceDetails: React.FC<DeviceDetailsProps> = ({
     setLoading(true);
     try {
       await apiContext.setDeviceAuto(device._id, !deviceStatus.auto);
-    } catch (error) {
-      console.error("Lỗi khi thay đổi chế độ tự động:", error);
+    } catch (err) {
+       
+      console.error("Lỗi khi thay đổi chế độ tự động:", err);
       addToast("error", "Không thể thay đổi chế độ");
     } finally {
       setLoading(false);

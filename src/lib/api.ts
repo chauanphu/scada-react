@@ -4,7 +4,6 @@
 import type { Device, DeviceStatus, Schedule, CreateDeviceData } from "../types/Cluster";
 import { EnergyData } from "../types/Report";
 import { Task } from "../types/Task";
-import Cookies from "js-cookie";
 
 // Ensure environment variables are properly loaded
 export const NEXT_PUBLIC_API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
@@ -59,6 +58,7 @@ export async function checkLogin(token: string): Promise<boolean> {
     const data = await response.json();
     return Array.isArray(data); // Return true if we got users array back
   } catch (error) {
+    console.log(error)
     return false;
   }
 }

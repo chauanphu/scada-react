@@ -1,16 +1,8 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useAPI } from "../contexts/APIProvider";
-import { Navbar } from "../components/NavBar";
 import { getAuditLogs, downloadCSVAudit, AuditLog } from "../lib/api";
 
-interface PaginatedResponse<T> {
-  items: T[];
-  total: number;
-  page: number;
-  page_size: number;
-}
-
-export const AuditPage: React.FC = () => {
+export const AuditPage = (): JSX.Element => {
   const apiContext = useAPI();
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
@@ -18,13 +10,7 @@ export const AuditPage: React.FC = () => {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
-  useEffect(() => {
-    if (!apiContext?.token) {
-      return;
-    }
-    fetchLogs();
-  }, [page, apiContext?.token]);
-
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const fetchLogs = async () => {
     if (!apiContext?.token) {
       setError("Not authenticated");
@@ -38,7 +24,9 @@ export const AuditPage: React.FC = () => {
       setTotalPages(Math.ceil(data.total / data.page_size));
       setError(null);
     } catch (err) {
-      setError("Failed to fetch audit logs");
+      console.log(err);
+
+      setError("Failed to fetch audit logs" + err);
       setLogs([]);
     } finally {
       setLoading(false);
@@ -54,9 +42,17 @@ export const AuditPage: React.FC = () => {
     try {
       await downloadCSVAudit(apiContext.token);
     } catch (err) {
-      setError("Failed to download CSV");
+       console.log(err);
+      setError("Failed to download CSV" + err);
     }
   };
+
+  useEffect(() => {
+    if (!apiContext?.token) {
+      return;
+    }
+    void fetchLogs();
+  }, [page, apiContext?.token, fetchLogs]);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -182,4 +178,4 @@ export const AuditPage: React.FC = () => {
       </div>
     </div>
   );
-}; 
+};

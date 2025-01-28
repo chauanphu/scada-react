@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAPI } from "../contexts/APIProvider";
 
@@ -8,10 +8,11 @@ interface Notification {
   timestamp: string;
 }
 
-export const Navbar: React.FC = () => {
+export const Navbar = () => {
   const location = useLocation();
   const apiContext = useAPI();
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+   
+  const [notifications] = useState<Notification[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 

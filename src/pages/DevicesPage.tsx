@@ -1,13 +1,14 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Device, CreateDeviceData } from "../lib/api";
 import { useAPI } from "../contexts/APIProvider";
-import { Navbar } from "../components/NavBar";
-import { getDevices, createDevice, updateDevice, deleteDevice } from "../lib/api";
+import { getDevices, createDevice, 
+  // updateDevice, 
+  deleteDevice } from "../lib/api";
 
 export const DevicesPage: React.FC = () => {
   const apiContext = useAPI();
   const [devices, setDevices] = useState<Device[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [creating, setCreating] = useState(false);
   const [newDevice, setNewDevice] = useState<CreateDeviceData>({
@@ -15,10 +16,11 @@ export const DevicesPage: React.FC = () => {
     mac: "",
   });
 
-  useEffect(() => {
-    fetchDevices();
-  }, []);
+  const handleConfirmDelete = () => {
+    return window.confirm("Bạn có chắc chắn muốn xóa thiết bị này?");
+  };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const fetchDevices = async () => {
     setLoading(true);
     setError("");
@@ -44,6 +46,7 @@ export const DevicesPage: React.FC = () => {
       setCreating(false);
       setNewDevice({ name: "", mac: "" });
     } catch (err) {
+       
       console.error(err);
       setError("Lỗi khi tạo thiết bị mới.");
     } finally {
@@ -51,23 +54,25 @@ export const DevicesPage: React.FC = () => {
     }
   };
 
-  const handleUpdateDevice = async (deviceId: string, deviceData: Partial<CreateDeviceData>) => {
-    setLoading(true);
-    setError("");
-    try {
-      const token = apiContext?.token || "";
-      await updateDevice(token, deviceId, deviceData);
-      await fetchDevices();
-    } catch (err) {
-      console.error(err);
-      setError("Lỗi khi cập nhật thiết bị.");
-    } finally {
-      setLoading(false);
-    }
-  };
+   
+  // const handleUpdateDevice = async (deviceId: string, deviceData: Partial<CreateDeviceData>) => {
+  //   setLoading(true);
+  //   setError("");
+  //   try {
+  //     const token = apiContext?.token || "";
+  //     await updateDevice(token, deviceId, deviceData);
+  //     await fetchDevices();
+  //   } catch (err) {
+       
+  //     console.error(err);
+  //     setError("Lỗi khi cập nhật thiết bị.");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
   const handleDeleteDevice = async (deviceId: string) => {
-    if (!confirm("Bạn có chắc chắn muốn xóa thiết bị này?")) return;
+    if (!handleConfirmDelete()) return;
 
     setLoading(true);
     setError("");
@@ -76,12 +81,18 @@ export const DevicesPage: React.FC = () => {
       await deleteDevice(token, deviceId);
       setDevices(devices.filter(device => device._id !== deviceId));
     } catch (err) {
+       
+       
       console.error(err);
       setError("Lỗi khi xóa thiết bị.");
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchDevices();
+  }, [fetchDevices]);
 
   return (
     <>    
