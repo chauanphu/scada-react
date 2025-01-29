@@ -1,20 +1,22 @@
-import { WebSocketProvider } from "./contexts/WebsocketProvider";
-import { APIProvider } from "./contexts/APIProvider";
+import { Navigate, Outlet } from "react-router-dom";
+import { useAPI } from "./contexts/APIProvider";
+import { Navbar } from "./components/NavBar";
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+const RootLayout = () => {
+  const apiContext = useAPI();
+
+  if (!apiContext?.isAuthenticated) {
+    return <Navigate to="/login" />;
+  }
+
   return (
-    <>
-      {/* <body className={`antialiased`}> */}
-        <APIProvider>
-          <WebSocketProvider>
-            <main className="h-screen">{children}</main>
-          </WebSocketProvider>
-        </APIProvider>
-      {/* </body> */}
-    </>
+    <div className="min-h-screen bg-gray-100">
+      <Navbar />
+      <main className="container mx-auto px-4 py-8">
+        <Outlet />
+      </main>
+    </div>
   );
-}
+};
+
+export default RootLayout;

@@ -1,30 +1,25 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, FormEvent } from 'react';
 import { motion } from 'framer-motion';
 import { LucideUserCircle2, Lock } from 'lucide-react';
 import logo from '../images/logo/logo.png';
-import { getToken } from '../lib/api';
-import Cookies from 'js-cookie';
+import { useAPI } from '../contexts/APIProvider';
 
 export default function LoginPage() {
-  const navigate = useNavigate();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const apiContext = useAPI();
 
-  const handleSubmit = async (e: any) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
 
     try {
-      const token = await getToken(username, password);
-      // Set token to the cookie with expiration time and redirect to the dashboard /
-      Cookies.set('token', token, { expires: 7 });
-      navigate('/');
-    } catch (error: any) {
-      setError(error.message);
+      await apiContext.login(username, password);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setLoading(false);
     }
