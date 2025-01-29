@@ -5,7 +5,11 @@ on:
   push:
     tags:
       - 'v*'       # e.g. v1.0.0, v2.3.4, etc.
-
+env:
+  VERSION: 0.1.0
+  DROPLET_DIR: ~/scada
+  SERVICE_NAME: reactjs-app
+  DOCKERHUB_REPO: ${{ secrets.DOCKERHUB_USERNAME }}/reactjs-app
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
@@ -32,8 +36,8 @@ jobs:
       # 3) Build and push Docker image using the extracted version
       - name: Build and Push Docker Image
         run: |
-          # example image name: ${{ secrets.DOCKERHUB_USERNAME }}/fastapi-scada
-          IMAGE_NAME="${{ secrets.DOCKERHUB_USERNAME }}/fastapi-scada"
+          # example image name: ${{ env.DOCKERHUB_REPO }}
+          IMAGE_NAME="${{ env.DOCKERHUB_REPO }}"
           VERSION="${{ env.VERSION }}"
 
           # Build image tagged with the version (e.g., 1.0.0)
@@ -58,10 +62,10 @@ jobs:
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           script: |
             # Move to the directory where docker-compose.yml resides
-            cd scada
+            cd ${{ env.DROPLET_DIR }}
             
             # Pull the updated images (fastapi-app is now tagged "latest" in docker-compose)
-            docker compose pull fastapi-app
+            docker compose pull ${{ env.SERVICE_NAME }}
             
             # Recreate containers in detached mode
             docker compose up -d
