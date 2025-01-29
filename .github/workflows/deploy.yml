@@ -1,0 +1,67 @@
+name: Deploy on Tag
+
+on:
+  # Trigger this workflow when pushing a tag that starts with 'v'
+  push:
+    tags:
+      - 'v*'       # e.g. v1.0.0, v2.3.4, etc.
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      # 1) Extract the version from the tag (e.g., "v1.0.0" -> "1.0.0")
+      - name: Extract version from tag
+        id: extract_version
+        run: |
+          VERSION="${GITHUB_REF#refs/tags/}"   # e.g. v1.0.0
+          VERSION="${VERSION#v}"              # remove the leading 'v'
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+      # 2) Log in to Docker Hub (or your registry)
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
+      # 3) Build and push Docker image using the extracted version
+      - name: Build and Push Docker Image
+        run: |
+          # example image name: ${{ secrets.DOCKERHUB_USERNAME }}/fastapi-scada
+          IMAGE_NAME="${{ secrets.DOCKERHUB_USERNAME }}/fastapi-scada"
+          VERSION="${{ env.VERSION }}"
+
+          # Build image tagged with the version (e.g., 1.0.0)
+          docker build -t $IMAGE_NAME:$VERSION .
+          # Push that version
+          docker push $IMAGE_NAME:$VERSION
+
+          # Also tag & push "latest" for convenience
+          docker tag $IMAGE_NAME:$VERSION $IMAGE_NAME:latest
+          docker push $IMAGE_NAME:latest
+
+      # 4) SSH into Droplet to deploy the new version
+      - name: Install SSH Client
+        run: sudo apt-get update && sudo apt-get install -y ssh
+
+      - name: Deploy on Droplet via SSH
+        uses: appleboy/ssh-action@v0.1.8
+        with:
+          host: ${{ secrets.DROPLET_HOST }}
+          username: ${{ secrets.DROPLET_SSH_USER }}
+          key: ${{ secrets.DROPLET_SSH_KEY }}
+          passphrase: ${{ secrets.SSH_PASSPHRASE }}
+          script: |
+            # Move to the directory where docker-compose.yml resides
+            cd scada
+            
+            # Pull the updated images (fastapi-app is now tagged "latest" in docker-compose)
+            docker compose pull fastapi-app
+            
+            # Recreate containers in detached mode
+            docker compose up -d
