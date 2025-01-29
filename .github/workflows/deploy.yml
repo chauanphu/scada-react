@@ -38,6 +38,9 @@ jobs:
 
       # 3) Build and push Docker image using the extracted version
       - name: Build and Push Docker Image
+        env:
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+          VITE_WS_URL: ${{ secrets.VITE_WS_URL }}
         run: |
           # example image name: ${{ env.DOCKERHUB_REPO }}
           IMAGE_NAME="${{ env.DOCKERHUB_REPO }}"
