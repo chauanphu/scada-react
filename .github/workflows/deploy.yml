@@ -9,7 +9,10 @@ env:
   VERSION: 0.1.0
   DROPLET_DIR: ~/scada
   SERVICE_NAME: reactjs-app
-  DOCKERHUB_REPO: ${{ secrets.DOCKERHUB_USERNAME }}/reactjs-app
+  DOCKERHUB_REPO: ${{ secrets.DOCKERHUB_USERNAME }}/scada-reactjs
+  VITE_API_URL: ${{ secrets.VITE_API_URL }}
+  VITE_WS_URL: ${{ secrets.VITE_WS_URL }}
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
