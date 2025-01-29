@@ -1,6 +1,13 @@
 FROM node:20.16-alpine as builder
 
+ARG VITE_API_URL
+ARG VITE_WS_URL
+
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+ENV VITE_API_KEY=$VITE_API_KEY
+
 WORKDIR /app
+
 
 # Copy package files and install dependencies
 COPY package.json package-lock.json ./
