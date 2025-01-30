@@ -1,12 +1,19 @@
 import { useState, useEffect, useCallback } from "react";
-import { Device, CreateDeviceData } from "../lib/api";
+import {
+  Device,
+  CreateDeviceData,
+  getDevices,
+  createDevice,
+  deleteDevice,
+} from "../lib/api"; // Add Tenant type
 import { useAPI } from "../contexts/APIProvider";
-import { getDevices, createDevice, deleteDevice } from "../lib/api";
+import { Tenant, getTenants } from "../lib/tenant.api"; // Add getTenants function
 
 export const DevicesPage: React.FC = () => {
   const apiContext = useAPI();
   const { token } = useAPI();
   const [devices, setDevices] = useState<Device[]>([]);
+  const [tenants, setTenants] = useState<Tenant[]>([]); // State for tenants
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [creating, setCreating] = useState(false);
@@ -22,6 +29,7 @@ export const DevicesPage: React.FC = () => {
     tenant_id: "",
   });
 
+  // Fetch devices
   const fetchDevices = useCallback(async () => {
     if (!token) return;
     setLoading(true);
@@ -37,12 +45,25 @@ export const DevicesPage: React.FC = () => {
     }
   }, [token]);
 
+  // Fetch tenants
+  const fetchTenants = useCallback(async () => {
+    if (!token) return;
+    try {
+      const data = await getTenants(token);
+      setTenants(data);
+    } catch (err) {
+      console.error(err);
+      setError("Lỗi khi tải danh sách khách hàng.");
+    }
+  }, [token]);
+
   useEffect(() => {
     fetchDevices();
-  }, [fetchDevices]);
+    fetchTenants(); // Fetch tenants when the component mounts
+  }, [fetchDevices, fetchTenants]);
 
   const handleCreateDevice = async () => {
-    if (!token) return;
+    if (!token || !newDevice.tenant_id) return; // Ensure tenant is selected
     setLoading(true);
     setError("");
     try {
@@ -58,7 +79,7 @@ export const DevicesPage: React.FC = () => {
         minute_off: 0,
         auto: false,
         toggle: false,
-        tenant_id: "",
+        tenant_id: "", // Reset tenant selection
       });
     } catch (err) {
       console.error(err);
@@ -119,7 +140,9 @@ export const DevicesPage: React.FC = () => {
                 <input
                   type="text"
                   value={newDevice.name}
-                  onChange={(e) => setNewDevice({ ...newDevice, name: e.target.value })}
+                  onChange={(e) =>
+                    setNewDevice({ ...newDevice, name: e.target.value })
+                  }
                   className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
                   placeholder="Ví dụ: Đèn chiếu sáng 01"
                 />
@@ -132,7 +155,9 @@ export const DevicesPage: React.FC = () => {
                 <input
                   type="text"
                   value={newDevice.mac}
-                  onChange={(e) => setNewDevice({ ...newDevice, mac: e.target.value })}
+                  onChange={(e) =>
+                    setNewDevice({ ...newDevice, mac: e.target.value })
+                  }
                   className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
                   placeholder="Ví dụ: 00:1A:2B:3C:4D:5E"
                 />
@@ -149,7 +174,12 @@ export const DevicesPage: React.FC = () => {
                       min="0"
                       max="23"
                       value={newDevice.hour_on}
-                      onChange={(e) => setNewDevice({ ...newDevice, hour_on: Number(e.target.value) })}
+                      onChange={(e) =>
+                        setNewDevice({
+                          ...newDevice,
+                          hour_on: Number(e.target.value),
+                        })
+                      }
                       className="w-1/2 p-2 border rounded-lg"
                       placeholder="Giờ"
                     />
@@ -158,7 +188,12 @@ export const DevicesPage: React.FC = () => {
                       min="0"
                       max="59"
                       value={newDevice.minute_on}
-                      onChange={(e) => setNewDevice({ ...newDevice, minute_on: Number(e.target.value) })}
+                      onChange={(e) =>
+                        setNewDevice({
+                          ...newDevice,
+                          minute_on: Number(e.target.value),
+                        })
+                      }
                       className="w-1/2 p-2 border rounded-lg"
                       placeholder="Phút"
                     />
@@ -175,7 +210,12 @@ export const DevicesPage: React.FC = () => {
                       min="0"
                       max="23"
                       value={newDevice.hour_off}
-                      onChange={(e) => setNewDevice({ ...newDevice, hour_off: Number(e.target.value) })}
+                      onChange={(e) =>
+                        setNewDevice({
+                          ...newDevice,
+                          hour_off: Number(e.target.value),
+                        })
+                      }
                       className="w-1/2 p-2 border rounded-lg"
                       placeholder="Giờ"
                     />
@@ -184,7 +224,12 @@ export const DevicesPage: React.FC = () => {
                       min="0"
                       max="59"
                       value={newDevice.minute_off}
-                      onChange={(e) => setNewDevice({ ...newDevice, minute_off: Number(e.target.value) })}
+                      onChange={(e) =>
+                        setNewDevice({
+                          ...newDevice,
+                          minute_off: Number(e.target.value),
+                        })
+                      }
                       className="w-1/2 p-2 border rounded-lg"
                       placeholder="Phút"
                     />
@@ -197,7 +242,9 @@ export const DevicesPage: React.FC = () => {
                   <input
                     type="checkbox"
                     checked={newDevice.auto}
-                    onChange={(e) => setNewDevice({ ...newDevice, auto: e.target.checked })}
+                    onChange={(e) =>
+                      setNewDevice({ ...newDevice, auto: e.target.checked })
+                    }
                     className="rounded text-blue-600"
                   />
                   <span className="text-sm">Chế độ tự động</span>
@@ -206,7 +253,9 @@ export const DevicesPage: React.FC = () => {
                   <input
                     type="checkbox"
                     checked={newDevice.toggle}
-                    onChange={(e) => setNewDevice({ ...newDevice, toggle: e.target.checked })}
+                    onChange={(e) =>
+                      setNewDevice({ ...newDevice, toggle: e.target.checked })
+                    }
                     className="rounded text-blue-600"
                   />
                   <span className="text-sm">Bật ngay lập tức</span>
@@ -215,16 +264,22 @@ export const DevicesPage: React.FC = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Khách hàng
+                  Khách hàng *
                 </label>
                 <select
                   value={newDevice.tenant_id}
-                  onChange={(e) => setNewDevice({ ...newDevice, tenant_id: e.target.value })}
+                  onChange={(e) =>
+                    setNewDevice({ ...newDevice, tenant_id: e.target.value })
+                  }
                   className="w-full p-2 border rounded-lg"
+                  required
                 >
-                  <option value="">Khách hàng</option>
-                  <option value="Tenant1">Khách hàng 1</option>
-                  <option value="Tenant2">Khách hàng 2</option>
+                  <option value="">Chọn khách hàng</option>
+                  {tenants.map((tenant) => (
+                    <option key={tenant._id} value={tenant._id}>
+                      {tenant.name}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -238,7 +293,12 @@ export const DevicesPage: React.FC = () => {
               </button>
               <button
                 onClick={handleCreateDevice}
-                disabled={!newDevice.name || !newDevice.mac || loading}
+                disabled={
+                  !newDevice.name ||
+                  !newDevice.mac ||
+                  !newDevice.tenant_id || // Ensure tenant is selected
+                  loading
+                }
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center"
               >
                 {loading ? (
@@ -268,15 +328,18 @@ export const DevicesPage: React.FC = () => {
                 <table className="w-full min-w-[800px]">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Tên</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">
+                        Tên
+                      </th>
                       <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 hidden md:table-cell">
                         MAC
                       </th>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Trạng thái</th>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 hidden md:table-cell">
-                        Tự động
+                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">
+                        Khách hàng
                       </th>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Hành động</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">
+                        Hành động
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
@@ -284,19 +347,21 @@ export const DevicesPage: React.FC = () => {
                       <tr key={device.mac}>
                         <td className="px-4 py-4">
                           <div className="font-medium">{device.name}</div>
-                          <div className="text-sm text-gray-500 md:hidden">{device.mac}</div>
+                          <div className="text-sm text-gray-500 md:hidden">
+                            {device.mac}
+                          </div>
                         </td>
-                        <td className="px-4 py-4 hidden md:table-cell">{device.mac}</td>
                         <td className="px-4 py-4 hidden md:table-cell">
-                          {device.auto ? (
-                            <span className="text-green-600">✔ Kích hoạt</span>
-                          ) : (
-                            <span className="text-gray-400">✖ Tắt</span>
-                          )}
+                          {device.mac}
+                        </td>
+                        <td className="px-4 py-4">
+                          {tenants.find(
+                            (tenant) => tenant._id === device.tenant_id
+                          )?.name || "N/A"}
                         </td>
                         <td className="px-4 py-4">
                           <button
-                            onClick={() => handleDeleteDevice(device.mac)}
+                            onClick={() => handleDeleteDevice(device._id)}
                             className="text-red-600 hover:text-red-900 flex items-center"
                             disabled={loading}
                           >
