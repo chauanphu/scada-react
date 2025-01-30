@@ -62,6 +62,7 @@ interface APIContextType {
   permissions: string[];
   login: (username: string, password: string) => Promise<void>;
   logout: () => void;
+  validateToken: () => Promise<boolean>;
   hasPermission: (path: string) => boolean;
   getUsers: () => Promise<User[]>;
   createUser: (userData: Partial<User>) => Promise<User>;
@@ -101,20 +102,23 @@ export function APIProvider({ children }: { children: ReactNode }) {
   const [permissions, setPermissions] = useState<string[]>([]);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const validateToken = async () => {
-      if (token) {
-        const isValid = await checkLogin(token);
-        setIsAuthenticated(isValid);
-        if (!isValid) {
-          Cookies.remove("token");
-          setToken(null);
-          setUserRole(null);
-          setTenantId(null);
-          setPermissions([]);
-        }
+  const validateToken = async (): Promise<boolean> => {
+    if (token) {
+      const isValid = await checkLogin(token);
+      setIsAuthenticated(isValid);
+      if (!isValid) {
+        Cookies.remove("token");
+        setToken(null);
+        setUserRole(null);
+        setTenantId(null);
+        setPermissions([]);
       }
-    };
+      return isValid;
+    }
+    return false;
+  };
+
+  useEffect(() => {
     validateToken();
   }, [token]);
 
@@ -158,6 +162,7 @@ export function APIProvider({ children }: { children: ReactNode }) {
     permissions,
     login,
     logout,
+    validateToken,
     hasPermission,
     getUsers: () => getUsers(token || ""),
     createUser: (userData: Partial<User>) => createUser(token || "", userData),

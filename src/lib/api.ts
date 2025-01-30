@@ -43,20 +43,17 @@ export type { Device, DeviceStatus, Schedule, CreateDeviceData };
 // Check if logged in by validating token by getting user info
 export async function checkLogin(token: string): Promise<boolean> {
   try {
-    const response = await fetch(`${NEXT_PUBLIC_API_URL}/users/`, {
+    const response = await fetch(`${NEXT_PUBLIC_API_URL}/auth/validate/`, {
       headers: {
         'accept': 'application/json',
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
     });
-
     if (!response.ok) {
       return false;
     }
-
-    const data = await response.json();
-    return Array.isArray(data); // Return true if we got users array back
+    return true;
   } catch (error) {
     console.log(error)
     return false;

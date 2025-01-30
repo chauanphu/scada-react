@@ -21,12 +21,6 @@ export const DeviceList: React.FC<DeviceListProps> = ({
   const wsContext = useWebSocket();
   const deviceStatuses = wsContext?.deviceStatuses || {};
 
-  console.log("DeviceList render:", {
-    devices,
-    selectedDevice,
-    deviceStatuses,
-  });
-
   const handleDeviceClick = (device: Device, e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
     if (target.closest("button")) return; // Don't select if clicking buttons
@@ -43,7 +37,6 @@ export const DeviceList: React.FC<DeviceListProps> = ({
         ) : (
           devices.map((device) => {
             const status = deviceStatuses[device._id];
-            console.log(`Device ${device._id} status:`, status);
 
             return (
               <div
