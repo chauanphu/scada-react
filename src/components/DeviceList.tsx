@@ -21,15 +21,15 @@ export const DeviceList: React.FC<DeviceListProps> = ({
   const wsContext = useWebSocket();
   const deviceStatuses = wsContext?.deviceStatuses || {};
 
-  console.log('DeviceList render:', {
+  console.log("DeviceList render:", {
     devices,
     selectedDevice,
-    deviceStatuses
+    deviceStatuses,
   });
 
   const handleDeviceClick = (device: Device, e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
-    if (target.closest('button')) return; // Don't select if clicking buttons
+    if (target.closest("button")) return; // Don't select if clicking buttons
     onDeviceSelect(device);
   };
 
@@ -44,7 +44,7 @@ export const DeviceList: React.FC<DeviceListProps> = ({
           devices.map((device) => {
             const status = deviceStatuses[device._id];
             console.log(`Device ${device._id} status:`, status);
-            
+
             return (
               <div
                 key={device._id}
@@ -60,11 +60,39 @@ export const DeviceList: React.FC<DeviceListProps> = ({
                     <h3 className="font-medium text-gray-900 text-lg break-words">
                       {status?.device_name || device.name}
                     </h3>
-                    <p className="text-sm text-gray-500 break-all">{device.mac}</p>
-                    {device.latitude && device.longitude && (
-                      <p className="text-xs text-gray-400">
-                        Vị trí: {device.latitude.toFixed(6)}, {device.longitude.toFixed(6)}
-                      </p>
+                    {status && status.is_connected ? (
+                      <div className="mt-2 text-sm text-gray-600 space-y-1">
+                        <div className="grid grid-cols-2 gap-1">
+                          <div className="bg-gray-50 p-1 rounded">
+                            <span className="text-xs text-gray-500">
+                              Trạng Thái
+                            </span>
+                            <p className="font-medium">
+                              {status.toggle ? "Bật" : "Tắt"}
+                            </p>
+                          </div>
+                          <div className="bg-gray-50 p-1 rounded">
+                            <span className="text-xs text-gray-500">
+                              Chế độ
+                            </span>
+                            <p className="font-medium">
+                              {status.auto ? "Tự Động" : "Thủ Công"}
+                            </p>
+                          </div>
+                        </div>
+                        {status.power > 0 && (
+                          <div className="bg-gray-50 p-1 rounded">
+                            <span className="text-xs text-gray-500">
+                              Công suất
+                            </span>
+                            <p className="font-medium">{status.power}W</p>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="text-sm text-gray-500">
+                        Đang tải dữ liệu...
+                      </div>
                     )}
                   </div>
                   {status && (
@@ -80,26 +108,6 @@ export const DeviceList: React.FC<DeviceListProps> = ({
                     </div>
                   )}
                 </div>
-                {status && (
-                  <div className="mt-2 text-sm text-gray-600 space-y-1">
-                    <div className="grid grid-cols-2 gap-1">
-                      <div className="bg-gray-50 p-1 rounded">
-                        <span className="text-xs text-gray-500">Trạng Thái</span>
-                        <p className="font-medium">{status.toggle ? "Bật" : "Tắt"}</p>
-                      </div>
-                      <div className="bg-gray-50 p-1 rounded">
-                        <span className="text-xs text-gray-500">Chế độ</span>
-                        <p className="font-medium">{status.auto ? "Tự Động" : "Thủ Công"}</p>
-                      </div>
-                    </div>
-                    {status.power > 0 && (
-                      <div className="bg-gray-50 p-1 rounded">
-                        <span className="text-xs text-gray-500">Công suất</span>
-                        <p className="font-medium">{status.power}W</p>
-                      </div>
-                    )}
-                  </div>
-                )}
                 {(onEditDevice || onDeleteDevice) && (
                   <div className="mt-4 flex justify-end space-x-2">
                     {onEditDevice && (
