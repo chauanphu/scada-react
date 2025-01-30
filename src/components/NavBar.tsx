@@ -38,11 +38,11 @@ export const Navbar = () => {
       href: "/users",
       permission: "/users",
     },
-    {
-      name: "Phân quyền",
-      href: "/roles",
-      permission: "/roles",
-    },
+    // {
+    //   name: "Phân quyền",
+    //   href: "/roles",
+    //   permission: "/roles",
+    // },
     {
       name: "Nhật ký",
       href: "/audit",

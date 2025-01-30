@@ -23,7 +23,7 @@ function App() {
                 <Route index element={<HomePage />} />
                 <Route path="devices" element={<DevicesPage />} />
                 <Route path="users" element={<UsersPage />} />
-                <Route path="roles" element={<RolesPage />} />
+                {/* <Route path="roles" element={<RolesPage />} /> */}
                 <Route path="audit" element={<AuditPage />} />
                 <Route path="firmware" element={<FirmwarePage />} />
               </Route>
