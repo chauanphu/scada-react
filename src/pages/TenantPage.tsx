@@ -1,6 +1,14 @@
 import { useState, useEffect, useCallback } from "react";
+import {
+  Tenant,
+  CreateTenantData,
+  UpdateTenantData,
+  getTenants,
+  createTenant,
+  updateTenant,
+  deleteTenant,
+} from "../lib/tenant.api";
 import { useAPI } from "../contexts/APIProvider";
-import { getTenants, createTenant, deleteTenant, Tenant, CreateTenantData } from "../lib/tenant.api";
 
 export const TenantPage: React.FC = () => {
   const { token } = useAPI();
@@ -8,6 +16,12 @@ export const TenantPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [creating, setCreating] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editData, setEditData] = useState<UpdateTenantData>({
+    name: "",
+    disabled: false,
+  });
+
   const [newTenant, setNewTenant] = useState<CreateTenantData>({
     name: "",
     disabled: false,
@@ -51,19 +65,36 @@ export const TenantPage: React.FC = () => {
       setLoading(false);
     }
   };
-
+  // Add handleEditTenant function
+  const handleEditTenant = async (tenantId: string) => {
+    if (!token) return;
+    setLoading(true);
+    setError("");
+    try {
+      await updateTenant(token, tenantId, editData);
+      setTenants(
+        tenants.map((tenant) =>
+          tenant._id === tenantId ? { ...tenant, ...editData } : tenant
+        )
+      );
+      setEditingId(null);
+    } catch (err) {
+      console.error(err);
+      setError("Failed to update tenant.");
+    } finally {
+      setLoading(false);
+    }
+  };
   const handleConfirmDelete = () => {
     return window.confirm("Are you sure you want to delete this tenant?");
   };
 
-  
   const handleDeleteTenant = async (tenantId: string) => {
     if (!handleConfirmDelete()) return;
 
     setLoading(true);
     setError("");
     try {
-
       await deleteTenant(token || "", tenantId);
       setTenants(tenants.filter((tenant) => tenant._id !== tenantId));
     } catch (err) {
@@ -72,6 +103,105 @@ export const TenantPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Update the table row rendering
+  const TenantRow: React.FC<{ tenant: Tenant }> = ({ tenant }) => {
+    const isEditing = editingId === tenant._id;
+
+    return (
+      <tr key={tenant._id}>
+        <td className="px-4 py-4">
+          {isEditing ? (
+            <input
+              type="text"
+              value={editData.name}
+              onChange={(e) =>
+                setEditData({ ...editData, name: e.target.value })
+              }
+              className="w-full p-1 border rounded"
+            />
+          ) : (
+            <div className="font-medium">{tenant.name}</div>
+          )}
+        </td>
+        <td className="px-4 py-4">
+          {new Date(tenant.created_date).toLocaleDateString()}
+        </td>
+        <td className="px-4 py-4">
+          {isEditing ? (
+            <label className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                checked={editData.disabled}
+                onChange={(e) =>
+                  setEditData({ ...editData, disabled: e.target.checked })
+                }
+                className="rounded text-blue-600"
+              />
+              <span className="text-sm">Khóa tài khoản</span>
+            </label>
+          ) : (
+            <span
+              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                tenant.disabled
+                  ? "bg-red-100 text-red-800"
+                  : "bg-green-100 text-green-800"
+              }`}
+            >
+              {tenant.disabled ? "Disabled" : "Active"}
+            </span>
+          )}
+        </td>
+        <td className="px-4 py-4 flex items-center space-x-2">
+          {isEditing ? (
+            <>
+              <button
+                onClick={() => handleEditTenant(tenant._id)}
+                className="text-green-600 hover:text-green-800"
+                disabled={loading || !editData.name}
+              >
+                {loading ? (
+                  <div className="h-4 w-4 border-2 border-green-600 border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  "Lưu thay đổi"
+                )}
+              </button>
+              <button
+                onClick={() => {
+                  setEditingId(null);
+                  setEditData({ name: "", disabled: false });
+                }}
+                className="text-gray-600 hover:text-gray-800"
+              >
+                Hủy bỏ
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={() => {
+                  setEditingId(tenant._id);
+                  setEditData({
+                    name: tenant.name,
+                    disabled: tenant.disabled,
+                  });
+                }}
+                className="text-blue-600 hover:text-blue-800"
+              >
+                Chỉnh sửa
+              </button>
+              <button
+                onClick={() => handleDeleteTenant(tenant._id)}
+                className="text-red-600 hover:text-red-800"
+              >
+                Xóa
+              </button>
+            </>
+          )}
+        </td>
+      </tr>
+    );
   };
 
   return (
@@ -183,38 +313,7 @@ export const TenantPage: React.FC = () => {
                   </thead>
                   <tbody className="divide-y divide-gray-200">
                     {tenants.map((tenant) => (
-                      <tr key={tenant._id}>
-                        <td className="px-4 py-4">
-                          <div className="font-medium">{tenant.name}</div>
-                        </td>
-                        <td className="px-4 py-4">
-                          {new Date(tenant.created_date).toLocaleDateString()}
-                        </td>
-                        <td className="px-4 py-4">
-                          <span
-                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              tenant.disabled
-                                ? "bg-red-100 text-red-800"
-                                : "bg-green-100 text-green-800"
-                            }`}
-                          >
-                            {tenant.disabled ? "Disabled" : "Active"}
-                          </span>
-                        </td>
-                        <td className="px-4 py-4">
-                          <button
-                            onClick={() => handleDeleteTenant(tenant._id)}
-                            className="text-red-600 hover:text-red-900 flex items-center"
-                            disabled={loading}
-                          >
-                            {loading ? (
-                              <div className="h-4 w-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></div>
-                            ) : (
-                              "Delete"
-                            )}
-                          </button>
-                        </td>
-                      </tr>
+                      <TenantRow key={tenant._id} tenant={tenant} />
                     ))}
                   </tbody>
                 </table>

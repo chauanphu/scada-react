@@ -13,6 +13,11 @@ export interface CreateTenantData {
   disabled: boolean;
 }
 
+export interface UpdateTenantData {
+  name?: string;
+  disabled?: boolean;
+}
+
 export const getTenants = async (token: string): Promise<Tenant[]> => {
   const response = await fetch(`${PUBLIC_API_URL}/tenant/`, {
     headers: {
@@ -36,6 +41,20 @@ export const createTenant = async (token: string, data: CreateTenantData): Promi
   });
   if (!response.ok) {
     throw new Error("Failed to create tenant.");
+  }
+};
+
+export const updateTenant = async (token: string, tenantId: string, data: UpdateTenantData): Promise<void> => {
+  const response = await fetch(`${PUBLIC_API_URL}/tenant/${tenantId}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) {
+    throw new Error("Failed to update tenant.");
   }
 };
 
