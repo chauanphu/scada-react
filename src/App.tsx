@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import LoginPage from "./pages/LoginPage";
 import { HomePage } from "./pages/HomePage";
+import { TenantPage } from "./pages/TenantPage";
 import { DevicesPage } from "./pages/DevicesPage";
 import { UsersPage } from "./pages/UsersPage";
 import { RolesPage } from "./pages/RolesPage";
@@ -21,6 +22,7 @@ function App() {
               <Route path="/login" element={<LoginPage />} />
               <Route path="/" element={<RootLayout />}>
                 <Route index element={<HomePage />} />
+                <Route path="tenants" element={<TenantPage />} />
                 <Route path="devices" element={<DevicesPage />} />
                 <Route path="users" element={<UsersPage />} />
                 {/* <Route path="roles" element={<RolesPage />} /> */}

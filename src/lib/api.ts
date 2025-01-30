@@ -6,8 +6,8 @@ import { EnergyData } from "../types/Report";
 import { Task } from "../types/Task";
 
 // Ensure environment variables are properly loaded
-export const NEXT_PUBLIC_API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
-export const NEXT_PUBLIC_WS_URL = import.meta.env.VITE_WS_URL || "ws://localhost:8000/api/ws";
+export const PUBLIC_API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
+export const PUBLIC_WS_URL = import.meta.env.VITE_WS_URL || "ws://localhost:8000/api/ws";
 
 export enum UserRole {
   SUPERADMIN = "superadmin",
@@ -43,7 +43,7 @@ export type { Device, DeviceStatus, Schedule, CreateDeviceData };
 // Check if logged in by validating token by getting user info
 export async function checkLogin(token: string): Promise<boolean> {
   try {
-    const response = await fetch(`${NEXT_PUBLIC_API_URL}/auth/validate/`, {
+    const response = await fetch(`${PUBLIC_API_URL}/auth/validate/`, {
       headers: {
         'accept': 'application/json',
         'Content-Type': 'application/json',
@@ -61,7 +61,7 @@ export async function checkLogin(token: string): Promise<boolean> {
 }
 
 export async function getToken(username: string, password: string): Promise<TokenResponse> {
-  const response = await fetch(`${NEXT_PUBLIC_API_URL}/auth/token`, {
+  const response = await fetch(`${PUBLIC_API_URL}/auth/token`, {
     method: "POST",
     headers: {
       accept: "application/json",
@@ -92,7 +92,7 @@ export async function getToken(username: string, password: string): Promise<Toke
 
 // Get all devices
 export async function getDevices(token: string): Promise<Device[]> {
-  const response = await fetch(`${NEXT_PUBLIC_API_URL}/devices/`, {
+  const response = await fetch(`${PUBLIC_API_URL}/devices/`, {
     headers: {
       accept: "application/json",
       "Content-Type": "application/json",
@@ -109,7 +109,7 @@ export async function getDevices(token: string): Promise<Device[]> {
 }
 
 export async function getUsers(token: string): Promise<User[]> {
-  const response = await fetch(`${NEXT_PUBLIC_API_URL}/users/`, {
+  const response = await fetch(`${PUBLIC_API_URL}/users/`, {
     headers: {
       accept: "application/json",
       "Content-Type": "application/json",
@@ -128,7 +128,7 @@ export async function createUser(
   token: string,
   userData: Partial<User>
 ): Promise<User> {
-  const response = await fetch(`${NEXT_PUBLIC_API_URL}/users/`, {
+  const response = await fetch(`${PUBLIC_API_URL}/users/`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -149,7 +149,7 @@ export async function updateUser(
   userId: number,
   userData: Partial<User>
 ): Promise<User> {
-  const response = await fetch(`${NEXT_PUBLIC_API_URL}/users/${userId}`, {
+  const response = await fetch(`${PUBLIC_API_URL}/users/${userId}`, {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",
@@ -166,7 +166,7 @@ export async function updateUser(
 }
 
 export async function deleteUser(token: string, userId: number): Promise<User> {
-  const response = await fetch(`${NEXT_PUBLIC_API_URL}/users/${userId}`, {
+  const response = await fetch(`${PUBLIC_API_URL}/users/${userId}`, {
     method: "DELETE",
     headers: {
       accept: "application/json",
@@ -186,7 +186,7 @@ export async function createDevice(
   token: string,
   deviceData: CreateDeviceData
 ): Promise<Device> {
-  const response = await fetch(`${NEXT_PUBLIC_API_URL}/devices/`, {
+  const response = await fetch(`${PUBLIC_API_URL}/devices/`, {
     method: "POST",
     headers: {
       accept: "application/json",
@@ -209,7 +209,7 @@ export async function updateDevice(
   deviceId: string,
   deviceData: Partial<CreateDeviceData>
 ): Promise<Device> {
-  const response = await fetch(`${NEXT_PUBLIC_API_URL}/devices/${deviceId}`, {
+  const response = await fetch(`${PUBLIC_API_URL}/devices/${deviceId}`, {
     method: "PUT",
     headers: {
       accept: "application/json",
@@ -231,7 +231,7 @@ export async function deleteDevice(
   token: string,
   deviceId: string
 ): Promise<Device> {
-  const response = await fetch(`${NEXT_PUBLIC_API_URL}/devices/${deviceId}`, {
+  const response = await fetch(`${PUBLIC_API_URL}/devices/${deviceId}`, {
     method: "DELETE",
     headers: {
       accept: "application/json",
@@ -256,7 +256,7 @@ export async function toggleDevice(
 ): Promise<void> {
   try {
     const response = await fetch(
-      `${NEXT_PUBLIC_API_URL}/devices/toggle/${deviceId}?value=${state}`,
+      `${PUBLIC_API_URL}/devices/toggle/${deviceId}?value=${state}`,
       {
         method: "PUT",
         headers: {
@@ -284,7 +284,7 @@ export async function setDeviceAuto(
 ): Promise<void> {
   try {
     const response = await fetch(
-      `${NEXT_PUBLIC_API_URL}/devices/auto/${deviceId}`,
+      `${PUBLIC_API_URL}/devices/auto/${deviceId}`,
       {
         method: "PUT",
         headers: {
@@ -314,7 +314,7 @@ export async function setDeviceSchedule(
 ): Promise<void> {
   try {
     const response = await fetch(
-      `${NEXT_PUBLIC_API_URL}/devices/schedule/${deviceId}`,
+      `${PUBLIC_API_URL}/devices/schedule/${deviceId}`,
       {
         method: "PUT",
         headers: {
@@ -358,7 +358,7 @@ export async function getEnergyData(
     if (start_date) params.append("start_date", start_date);
     if (end_date) params.append("end_date", end_date);
     const response = await fetch(
-      `${NEXT_PUBLIC_API_URL}/devices/${deviceId}/energy?${params.toString()}`,
+      `${PUBLIC_API_URL}/devices/${deviceId}/energy?${params.toString()}`,
       {
         headers: {
           accept: "application/json",
@@ -383,7 +383,7 @@ export async function getEnergyData(
 
 export async function getRoles(token: string): Promise<Role[]> {
   try {
-    const response = await fetch(`${NEXT_PUBLIC_API_URL}/auth/roles`, {
+    const response = await fetch(`${PUBLIC_API_URL}/auth/roles`, {
       method: "GET",
       headers: {
         accept: "application/json",
@@ -432,7 +432,7 @@ export async function getAuditLogs(
 ): Promise<PaginatedAuditLogs> {
   try {
     const response = await fetch(
-      `${NEXT_PUBLIC_API_URL}/audit/?page=${page}&page_size=${page_size}`,
+      `${PUBLIC_API_URL}/audit/?page=${page}&page_size=${page_size}`,
       {
         method: "GET",
         headers: {
@@ -458,7 +458,7 @@ export async function getAuditLogs(
 
 export async function downloadCSVAudit(token: string): Promise<void> {
   try {
-    const response = await fetch(`${NEXT_PUBLIC_API_URL}/audit/download`, {
+    const response = await fetch(`${PUBLIC_API_URL}/audit/download`, {
       method: "GET",
       headers: {
         accept: "text/csv",
@@ -513,7 +513,7 @@ export async function getTasks(
   }
 
   const response = await fetch(
-    `${NEXT_PUBLIC_API_URL}/tasks/?${params.toString()}`,
+    `${PUBLIC_API_URL}/tasks/?${params.toString()}`,
     {
       headers: {
         accept: "application/json",
@@ -536,7 +536,7 @@ export async function updateTask(
   taskId: string,
   taskData: Partial<Task>
 ): Promise<Task> {
-  const response = await fetch(`${NEXT_PUBLIC_API_URL}/tasks/${taskId}`, {
+  const response = await fetch(`${PUBLIC_API_URL}/tasks/${taskId}`, {
     method: "PATCH",
     headers: {
       accept: "application/json",
@@ -560,7 +560,7 @@ export type Assignee = {
 
 // Get assignees /api/tasks/assignees
 export async function getAssignees(token: string): Promise<Assignee[]> {
-  const response = await fetch(`${NEXT_PUBLIC_API_URL}/tasks/assignees`, {
+  const response = await fetch(`${PUBLIC_API_URL}/tasks/assignees`, {
     headers: {
       accept: "application/json",
       "Content-Type": "application/json",
@@ -581,7 +581,7 @@ export async function changePassword(
   newPassword: string
 ): Promise<void> {
   const response = await fetch(
-    `${NEXT_PUBLIC_API_URL}/users/${targetId}/password`,
+    `${PUBLIC_API_URL}/users/${targetId}/password`,
     {
       method: "PUT",
       headers: {
@@ -619,7 +619,7 @@ export interface FirmwareMetadata {
 
 // Get latest firmware version
 export async function getLatestFirmware(token: string): Promise<FirmwareMetadata> {
-  const response = await fetch(`${NEXT_PUBLIC_API_URL}/firmware/latest/`, {
+  const response = await fetch(`${PUBLIC_API_URL}/firmware/latest/`, {
     headers: {
       accept: "application/json",
       Authorization: `Bearer ${token}`,
@@ -647,7 +647,7 @@ export async function uploadFirmware(
   formData.append("version", version);
   formData.append("file", file);
 
-  const response = await fetch(`${NEXT_PUBLIC_API_URL}/firmware/upload/`, {
+  const response = await fetch(`${PUBLIC_API_URL}/firmware/upload/`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -673,7 +673,7 @@ export async function updateDeviceFirmware(
   version: string
 ): Promise<void> {
   const response = await fetch(
-    `${NEXT_PUBLIC_API_URL}/firmware/update/${deviceId}?version=${version}`,
+    `${PUBLIC_API_URL}/firmware/update/${deviceId}?version=${version}`,
     {
       method: "PUT",
       headers: {
@@ -697,7 +697,7 @@ export async function massUpdateFirmware(
   token: string,
   version: string
 ): Promise<void> {
-  const response = await fetch(`${NEXT_PUBLIC_API_URL}/firmware/update/`, {
+  const response = await fetch(`${PUBLIC_API_URL}/firmware/update/`, {
     method: "PUT",
     headers: {
       accept: "application/json",
@@ -722,7 +722,7 @@ export async function createRole(
   token: string,
   data: { name: string; permissions: string[] }
 ): Promise<Role> {
-  const response = await fetch(`${NEXT_PUBLIC_API_URL}/roles/`, {
+  const response = await fetch(`${PUBLIC_API_URL}/roles/`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -743,7 +743,7 @@ export async function updateRole(
   roleId: string,
   data: { name: string; permissions: string[] }
 ): Promise<Role> {
-  const response = await fetch(`${NEXT_PUBLIC_API_URL}/roles/${roleId}`, {
+  const response = await fetch(`${PUBLIC_API_URL}/roles/${roleId}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",

@@ -28,6 +28,11 @@ export const Navbar = () => {
       permission: "/",
     },
     {
+      name: "Khách hàng",
+      href: "/tenants",
+      permission: "/tenants",
+    },
+    {
       name: "Thiết bị",
       href: "/devices",
       permission: "/devices",

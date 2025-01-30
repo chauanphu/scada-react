@@ -6,7 +6,7 @@ import { DeviceList } from "../components/DeviceList";
 import { DeviceMap } from "../components/DeviceMap";
 import { DeviceDetails } from "../components/DeviceDetails";
 import { useToast } from "../contexts/ToastProvider";
-import { NEXT_PUBLIC_API_URL } from "../lib/api";
+import { PUBLIC_API_URL } from "../lib/api";
 
 interface ReportData {
   timestamp: string;
@@ -57,7 +57,7 @@ export const HomePage = () => {
       const startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
       
       const response = await fetch(
-        `${NEXT_PUBLIC_API_URL}/report/?device_id=${selectedDevice._id}&start_date=${startDate.toISOString()}&end_date=${now.toISOString()}&aggregation=hourly`,
+        `${PUBLIC_API_URL}/report/?device_id=${selectedDevice._id}&start_date=${startDate.toISOString()}&end_date=${now.toISOString()}&aggregation=hourly`,
         {
           headers: {
             Authorization: `Bearer ${apiContext.token}`,

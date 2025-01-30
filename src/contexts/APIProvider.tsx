@@ -43,14 +43,15 @@ import Cookies from "js-cookie";
 const ROLE_PERMISSIONS = {
   [UserRole.SUPERADMIN]: [
     "/",
+    "/tenants",
     "/devices",
     "/users",
     "/roles",
     "/audit",
     "/firmware",
   ],
-  [UserRole.ADMIN]: ["/", "/devices", "/users", "/audit", "/firmware"],
-  [UserRole.OPERATOR]: ["/", "/devices", "/firmware"],
+  [UserRole.ADMIN]: ["/", "/devices", "/users", "/audit"],
+  [UserRole.OPERATOR]: ["/", "/devices"],
   [UserRole.MONITOR]: ["/"],
 };
 

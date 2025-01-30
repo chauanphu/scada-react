@@ -9,7 +9,7 @@ import React, {
 } from "react";
 import { useAPI } from "./APIProvider";
 import { Device, DeviceStatus } from "../types/Cluster";
-import { NEXT_PUBLIC_WS_URL } from "../lib/api";
+import { PUBLIC_WS_URL } from "../lib/api";
 import { useToast } from './ToastProvider';
 
 interface WebSocketContextType {
@@ -106,7 +106,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
       return;
     }
 
-    const wsUrl = `${NEXT_PUBLIC_WS_URL}/api/ws/monitor/?token=${apiContext.token}`;
+    const wsUrl = `${PUBLIC_WS_URL}/api/ws/monitor/?token=${apiContext.token}`;
     // console.log('Connecting to WebSocket:', wsUrl);
     
     const ws = new WebSocket(wsUrl);
