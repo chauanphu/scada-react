@@ -1,31 +1,32 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Device, CreateDeviceData } from "../lib/api";
 import { useAPI } from "../contexts/APIProvider";
-import { getDevices, createDevice, 
-  // updateDevice, 
-  deleteDevice } from "../lib/api";
+import { getDevices, createDevice, deleteDevice } from "../lib/api";
 
 export const DevicesPage: React.FC = () => {
   const apiContext = useAPI();
+  const { token } = useAPI();
   const [devices, setDevices] = useState<Device[]>([]);
-  const [, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [creating, setCreating] = useState(false);
   const [newDevice, setNewDevice] = useState<CreateDeviceData>({
     name: "",
     mac: "",
+    hour_on: 0,
+    hour_off: 0,
+    minute_on: 0,
+    minute_off: 0,
+    auto: false,
+    toggle: false,
+    tenant_id: "",
   });
 
-  const handleConfirmDelete = () => {
-    return window.confirm("Bạn có chắc chắn muốn xóa thiết bị này?");
-  };
-
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const fetchDevices = async () => {
+  const fetchDevices = useCallback(async () => {
+    if (!token) return;
     setLoading(true);
     setError("");
     try {
-      const token = apiContext?.token || "";
       const data = await getDevices(token);
       setDevices(data);
     } catch (err) {
@@ -34,19 +35,32 @@ export const DevicesPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [token]);
+
+  useEffect(() => {
+    fetchDevices();
+  }, [fetchDevices]);
 
   const handleCreateDevice = async () => {
+    if (!token) return;
     setLoading(true);
     setError("");
     try {
-      const token = apiContext?.token || "";
       await createDevice(token, newDevice);
       await fetchDevices();
       setCreating(false);
-      setNewDevice({ name: "", mac: "" });
+      setNewDevice({
+        name: "",
+        mac: "",
+        hour_on: 0,
+        hour_off: 0,
+        minute_on: 0,
+        minute_off: 0,
+        auto: false,
+        toggle: false,
+        tenant_id: "",
+      });
     } catch (err) {
-       
       console.error(err);
       setError("Lỗi khi tạo thiết bị mới.");
     } finally {
@@ -54,22 +68,9 @@ export const DevicesPage: React.FC = () => {
     }
   };
 
-   
-  // const handleUpdateDevice = async (deviceId: string, deviceData: Partial<CreateDeviceData>) => {
-  //   setLoading(true);
-  //   setError("");
-  //   try {
-  //     const token = apiContext?.token || "";
-  //     await updateDevice(token, deviceId, deviceData);
-  //     await fetchDevices();
-  //   } catch (err) {
-       
-  //     console.error(err);
-  //     setError("Lỗi khi cập nhật thiết bị.");
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
+  const handleConfirmDelete = () => {
+    return window.confirm("Bạn có chắc chắn muốn xóa thiết bị này?");
+  };
 
   const handleDeleteDevice = async (deviceId: string) => {
     if (!handleConfirmDelete()) return;
@@ -79,185 +80,242 @@ export const DevicesPage: React.FC = () => {
     try {
       const token = apiContext?.token || "";
       await deleteDevice(token, deviceId);
-      setDevices(devices.filter(device => device._id !== deviceId));
+      setDevices(devices.filter((device) => device._id !== deviceId));
     } catch (err) {
-       
-       
       console.error(err);
       setError("Lỗi khi xóa thiết bị.");
     } finally {
       setLoading(false);
     }
   };
-
-  useEffect(() => {
-    fetchDevices();
-  }, [fetchDevices]);
-
   return (
-    <>    
-      <div className="min-h-screen bg-gray-100 p-4">
-        <div className="max-w-7xl mx-auto">
-          <h1 className="text-3xl font-bold mb-6">Quản Lý Thiết Bị</h1>
+    <div className="min-h-screen bg-gray-100 p-4">
+      <div className="max-w-7xl mx-auto">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl md:text-3xl font-bold">Quản Lý Thiết Bị</h1>
+          <button
+            onClick={() => setCreating(!creating)}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center"
+          >
+            <span className="hidden md:inline">+ Thêm Thiết Bị</span>
+            <span className="md:hidden">+ Thêm</span>
+          </button>
+        </div>
 
-          {/* Error Message */}
-          {error && (
-            <div
-              className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-6"
-              role="alert"
-            >
-              <strong className="font-bold">Lỗi:</strong>
-              <span className="block sm:inline"> {error}</span>
-            </div>
-          )}
+        {error && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg mb-6">
+            {error}
+          </div>
+        )}
 
-          {/* Add New Device Button */}
-          {!creating && (
-            <button
-              onClick={() => setCreating(true)}
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4"
-            >
-              + Thêm Thiết Bị Mới
-            </button>
-          )}
+        {creating && (
+          <div className="bg-white shadow-lg rounded-xl mb-6 p-4 md:p-6">
+            <h2 className="text-xl font-semibold mb-4">Thêm thiết bị mới</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Tên thiết bị *
+                </label>
+                <input
+                  type="text"
+                  value={newDevice.name}
+                  onChange={(e) => setNewDevice({ ...newDevice, name: e.target.value })}
+                  className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                  placeholder="Ví dụ: Đèn chiếu sáng 01"
+                />
+              </div>
 
-          {/* Create New Device Form */}
-          {creating && (
-            <div className="bg-white shadow rounded-lg mb-4 p-4">
-              <h2 className="text-2xl font-semibold mb-4">Tạo Thiết Bị Mới</h2>
-              <div className="grid grid-cols-1 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Địa chỉ MAC *
+                </label>
+                <input
+                  type="text"
+                  value={newDevice.mac}
+                  onChange={(e) => setNewDevice({ ...newDevice, mac: e.target.value })}
+                  className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                  placeholder="Ví dụ: 00:1A:2B:3C:4D:5E"
+                />
+              </div>
+
+              <div className="md:col-span-2 grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Tên Thiết Bị
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Thời gian bật
                   </label>
-                  <input
-                    type="text"
-                    value={newDevice.name}
-                    onChange={(e) =>
-                      setNewDevice({ ...newDevice, name: e.target.value })
-                    }
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  />
+                  <div className="flex gap-2">
+                    <input
+                      type="number"
+                      min="0"
+                      max="23"
+                      value={newDevice.hour_on}
+                      onChange={(e) => setNewDevice({ ...newDevice, hour_on: Number(e.target.value) })}
+                      className="w-1/2 p-2 border rounded-lg"
+                      placeholder="Giờ"
+                    />
+                    <input
+                      type="number"
+                      min="0"
+                      max="59"
+                      value={newDevice.minute_on}
+                      onChange={(e) => setNewDevice({ ...newDevice, minute_on: Number(e.target.value) })}
+                      className="w-1/2 p-2 border rounded-lg"
+                      placeholder="Phút"
+                    />
+                  </div>
                 </div>
+
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    MAC Address
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Thời gian tắt
                   </label>
-                  <input
-                    type="text"
-                    value={newDevice.mac}
-                    onChange={(e) =>
-                      setNewDevice({ ...newDevice, mac: e.target.value })
-                    }
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Vĩ Độ
-                  </label>
-                  <input
-                    type="number"
-                    value={newDevice.latitude || ""}
-                    onChange={(e) =>
-                      setNewDevice({
-                        ...newDevice,
-                        latitude: e.target.value ? Number(e.target.value) : undefined,
-                      })
-                    }
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Kinh Độ
-                  </label>
-                  <input
-                    type="number"
-                    value={newDevice.longitude || ""}
-                    onChange={(e) =>
-                      setNewDevice({
-                        ...newDevice,
-                        longitude: e.target.value ? Number(e.target.value) : undefined,
-                      })
-                    }
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  />
+                  <div className="flex gap-2">
+                    <input
+                      type="number"
+                      min="0"
+                      max="23"
+                      value={newDevice.hour_off}
+                      onChange={(e) => setNewDevice({ ...newDevice, hour_off: Number(e.target.value) })}
+                      className="w-1/2 p-2 border rounded-lg"
+                      placeholder="Giờ"
+                    />
+                    <input
+                      type="number"
+                      min="0"
+                      max="59"
+                      value={newDevice.minute_off}
+                      onChange={(e) => setNewDevice({ ...newDevice, minute_off: Number(e.target.value) })}
+                      className="w-1/2 p-2 border rounded-lg"
+                      placeholder="Phút"
+                    />
+                  </div>
                 </div>
               </div>
-              <div className="mt-4 flex justify-end space-x-2">
-                <button
-                  onClick={() => {
-                    setCreating(false);
-                    setNewDevice({ name: "", mac: "" });
-                  }}
-                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500"
+
+              <div className="space-y-2">
+                <label className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    checked={newDevice.auto}
+                    onChange={(e) => setNewDevice({ ...newDevice, auto: e.target.checked })}
+                    className="rounded text-blue-600"
+                  />
+                  <span className="text-sm">Chế độ tự động</span>
+                </label>
+                <label className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    checked={newDevice.toggle}
+                    onChange={(e) => setNewDevice({ ...newDevice, toggle: e.target.checked })}
+                    className="rounded text-blue-600"
+                  />
+                  <span className="text-sm">Bật ngay lập tức</span>
+                </label>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Khách hàng
+                </label>
+                <select
+                  value={newDevice.tenant_id}
+                  onChange={(e) => setNewDevice({ ...newDevice, tenant_id: e.target.value })}
+                  className="w-full p-2 border rounded-lg"
                 >
-                  Hủy
-                </button>
-                <button
-                  onClick={handleCreateDevice}
-                  disabled={!newDevice.name || !newDevice.mac}
-                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Tạo
-                </button>
+                  <option value="">Khách hàng</option>
+                  <option value="Tenant1">Khách hàng 1</option>
+                  <option value="Tenant2">Khách hàng 2</option>
+                </select>
               </div>
             </div>
-          )}
 
-          {/* Devices List */}
-          <div className="bg-white shadow overflow-hidden sm:rounded-lg">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Tên
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    MAC Address
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Vị Trí
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Thao Tác
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {devices.map((device) => (
-                  <tr key={device._id}>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">
-                        {device.name}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-500">{device.mac}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-500">
-                        {device.latitude && device.longitude
-                          ? `${device.latitude}, ${device.longitude}`
-                          : "Chưa cập nhật"}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <button
-                        onClick={() => handleDeleteDevice(device._id)}
-                        className="text-red-600 hover:text-red-900 ml-4"
-                      >
-                        Xóa
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <div className="mt-6 flex flex-col-reverse md:flex-row gap-3 md:justify-end">
+              <button
+                onClick={() => setCreating(false)}
+                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+              >
+                Hủy bỏ
+              </button>
+              <button
+                onClick={handleCreateDevice}
+                disabled={!newDevice.name || !newDevice.mac || loading}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center"
+              >
+                {loading ? (
+                  <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  "Tạo thiết bị"
+                )}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Device Table */}
+        <div className="bg-white shadow-lg rounded-xl overflow-hidden">
+          <div className="px-4 py-5 sm:p-6">
+            <h3 className="text-lg font-semibold">Danh sách thiết bị</h3>
+            {loading ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+              </div>
+            ) : devices.length === 0 ? (
+              <div className="text-center text-gray-500 py-8">
+                Chưa có thiết bị nào được thêm
+              </div>
+            ) : (
+              <div className="overflow-x-auto mt-4">
+                <table className="w-full min-w-[800px]">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Tên</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 hidden md:table-cell">
+                        MAC
+                      </th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Trạng thái</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 hidden md:table-cell">
+                        Tự động
+                      </th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Hành động</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {devices.map((device) => (
+                      <tr key={device.mac}>
+                        <td className="px-4 py-4">
+                          <div className="font-medium">{device.name}</div>
+                          <div className="text-sm text-gray-500 md:hidden">{device.mac}</div>
+                        </td>
+                        <td className="px-4 py-4 hidden md:table-cell">{device.mac}</td>
+                        <td className="px-4 py-4 hidden md:table-cell">
+                          {device.auto ? (
+                            <span className="text-green-600">✔ Kích hoạt</span>
+                          ) : (
+                            <span className="text-gray-400">✖ Tắt</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-4">
+                          <button
+                            onClick={() => handleDeleteDevice(device.mac)}
+                            className="text-red-600 hover:text-red-900 flex items-center"
+                            disabled={loading}
+                          >
+                            {loading ? (
+                              <div className="h-4 w-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></div>
+                            ) : (
+                              "Xóa"
+                            )}
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
-}; 
+};
