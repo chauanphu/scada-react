@@ -47,7 +47,10 @@ jobs:
           VERSION="${{ env.VERSION }}"
 
           # Build image tagged with the version (e.g., 1.0.0)
-          docker build --build-args VITE_API_URL=$VITE_API_URL --build-args VITE_WS_URL=$VITE_WS_URL -t $IMAGE_NAME:$VERSION .
+          docker build \
+           --build-arg VITE_API_URL=$VITE_API_URL\
+           --build-arg VITE_WS_URL=$VITE_WS_URL\
+           -t $IMAGE_NAME:$VERSION .
           # Push that version
           docker push $IMAGE_NAME:$VERSION
 
