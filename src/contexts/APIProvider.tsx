@@ -38,7 +38,6 @@ import {
 } from "../lib/api";
 import { useNavigate } from "react-router-dom";
 import Cookies from "js-cookie";
-import { log } from "console";
 
 // Define role-based permissions
 const ROLE_PERMISSIONS = {
