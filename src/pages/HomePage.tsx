@@ -106,9 +106,9 @@ export const HomePage = () => {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-8rem)] -mt-8 -mx-4 pt-6">
+    <div className="flex flex-col h-[calc(100vh-6rem)] -mt-8 -mx-4 pt-6">
       <div className="flex flex-1 overflow-hidden">
-        <div className="w-1/4 overflow-y-hidden rounded-lg translate-y-7 hidden md:block">
+        <div className="w-1/5 overflow-y-hidden rounded-lg hidden md:block">
           <div className="p-4 pt-8 bg-white shadow-lg rounded-lg">
             <input
               type="text"
@@ -126,7 +126,7 @@ export const HomePage = () => {
             </div>
           </div>
         </div>
-        <div className="flex-1 p-8 bg-gray-100 overflow-y-hidden">
+        <div className="flex-1 p-2 bg-gray-100 overflow-y-hidden">
           <div className="h-1/2 mb-4">
             <div className="h-full bg-white rounded-lg shadow-lg overflow-hidden">
               <ErrorBoundary>
