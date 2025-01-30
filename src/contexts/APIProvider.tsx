@@ -38,6 +38,7 @@ import {
 } from "../lib/api";
 import { useNavigate } from "react-router-dom";
 import Cookies from "js-cookie";
+import { log } from "console";
 
 // Define role-based permissions
 const ROLE_PERMISSIONS = {
@@ -120,6 +121,9 @@ export function APIProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     validateToken();
+    // Set userRole from cookies
+    const role = Cookies.get("userRole") as UserRole;
+    setUserRole(role);
   }, [token]);
 
   const login = async (username: string, password: string) => {
@@ -131,16 +135,18 @@ export function APIProvider({ children }: { children: ReactNode }) {
     setTenantId(tenant_id || null);
     setPermissions(ROLE_PERMISSIONS[role] || []);
     setIsAuthenticated(true);
-
     // Set cookie with token
     Cookies.set("token", access_token);
-
+    Cookies.set("userRole", role); // ✅ Store userRole in cookies
+    Cookies.set("tenantId", tenant_id || ""); // ✅ Store tenantId in cookies
     // Navigate to home page
     navigate("/");
   };
 
   const logout = () => {
     Cookies.remove("token");
+    Cookies.remove("userRole");
+    Cookies.remove("tenantId");
     setToken(null);
     setIsAuthenticated(false);
     setUserRole(null);

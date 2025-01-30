@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { useWebSocket } from "../contexts/WebsocketProvider";
 import { useAPI } from "../contexts/APIProvider";
-import { Permissions } from "../lib/api";
 import { Device } from "../types/Cluster";
 import { DeviceList } from "../components/DeviceList";
 import { DeviceMap } from "../components/DeviceMap";
 import { DeviceDetails } from "../components/DeviceDetails";
 import { useToast } from "../contexts/ToastProvider";
-import { UserRole, NEXT_PUBLIC_API_URL } from "../lib/api";
+import { NEXT_PUBLIC_API_URL } from "../lib/api";
 
 interface ReportData {
   timestamp: string;
@@ -81,17 +80,6 @@ export const HomePage = () => {
       void fetchReportData();
     }
   }, [selectedDevice]);
-
-  if (apiContext.userRole !== UserRole.SUPERADMIN) {
-    if (
-      !wsContext ||
-      !apiContext ||
-      !apiContext.hasPermission(Permissions.VIEW_DEVICES)
-    ) {
-      addToast("error", "Bạn không có quyền xem thiết bị");
-      return null;
-    }
-  }
 
   if (!wsContext) return null;
 

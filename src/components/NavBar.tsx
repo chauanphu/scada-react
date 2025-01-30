@@ -21,7 +21,6 @@ export const Navbar = () => {
   }
 
   const { hasPermission } = apiContext;
-
   const tabs = [
     {
       name: "Trang chủ",
