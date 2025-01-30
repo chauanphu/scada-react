@@ -80,7 +80,7 @@ export const HomePage = () => {
     if (selectedDevice) {
       void fetchReportData();
     }
-  }, [selectedDevice, fetchReportData]);
+  }, [selectedDevice]);
 
   if (apiContext.userRole !== UserRole.SUPERADMIN) {
     if (
