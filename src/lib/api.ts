@@ -419,11 +419,12 @@ export async function getRoles(token: string): Promise<Role[]> {
 
 // Get audit logs
 export interface AuditLog {
-  id: number;
+  id: string;
   username: string;
   action: string;
-  target: string;
+  resource: string;
   timestamp: string;
+  role: string;
   details?: string;
 }
 
