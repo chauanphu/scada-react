@@ -1,4 +1,3 @@
-// New file: components/ReportView.tsx
 import React, { useEffect, useState } from "react";
 import { Line } from "react-chartjs-2";
 import { Button } from "./ui/button";
@@ -29,7 +28,7 @@ export const ReportView: React.FC<ReportViewProps> = ({ device }) => {
 
   const fetchReportData = async () => {
     if (!apiContext?.token) return;
-    
+
     try {
       const response = await fetch(
         `${PUBLIC_API_URL}/report/?device_id=${device._id}` +
@@ -63,37 +62,62 @@ export const ReportView: React.FC<ReportViewProps> = ({ device }) => {
   };
 
   return (
-    <div className="p-4 space-y-4">
-      <div className="flex flex-wrap gap-4 items-center">
+    <div className="p-4 space-y-4 h-full overflow-y-auto">
+      {/* Filters Section */}
+      <div className="flex flex-col md:flex-row flex-wrap gap-4 items-center">
         <input
           type="date"
           value={filters.startDate.split('T')[0]}
           onChange={(e) => setFilters(prev => ({ ...prev, startDate: e.target.value }))}
-          className="p-2 border rounded"
+          className="p-2 border rounded w-full md:w-auto"
         />
         <input
           type="date"
           value={filters.endDate.split('T')[0]}
           onChange={(e) => setFilters(prev => ({ ...prev, endDate: e.target.value }))}
-          className="p-2 border rounded"
+          className="p-2 border rounded w-full md:w-auto"
         />
         <select
           value={filters.aggregation}
           onChange={(e) => setFilters(prev => ({ ...prev, aggregation: e.target.value as any }))}
-          className="p-2 border rounded"
+          className="p-2 border rounded w-full md:w-auto"
         >
           <option value="hourly">Hourly</option>
           <option value="daily">Daily</option>
           <option value="monthly">Monthly</option>
         </select>
-        <Button onClick={fetchReportData} size="sm">
+        <Button onClick={fetchReportData} size="sm" className="w-full md:w-auto">
           Refresh
         </Button>
       </div>
-      
+
+      {/* Chart Section */}
       {reportData.length > 0 ? (
-        <div className="h-96">
-          <Line data={chartData} options={{ responsive: true, maintainAspectRatio: false }} />
+        <div className="w-full overflow-x-auto">
+          <div className="min-w-[600px] h-[400px] md:h-[500px]">
+            <Line
+              data={chartData}
+              options={{
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                  legend: {
+                    display: true,
+                    position: "top",
+                  },
+                },
+                scales: {
+                  x: {
+                    ticks: {
+                      autoSkip: true,
+                      maxRotation: 0,
+                      minRotation: 0,
+                    },
+                  },
+                },
+              }}
+            />
+          </div>
         </div>
       ) : (
         <div className="text-center text-gray-500 py-8">
