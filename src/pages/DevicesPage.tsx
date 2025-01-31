@@ -5,18 +5,20 @@ import {
   getDevices,
   createDevice,
   deleteDevice,
-} from "../lib/api"; // Add Tenant type
+  updateDevice,
+} from "../lib/api"; // Add updateDevice function
 import { useAPI } from "../contexts/APIProvider";
-import { Tenant, getTenants } from "../lib/tenant.api"; // Add getTenants function
+import { Tenant, getTenants } from "../lib/tenant.api";
 
 export const DevicesPage: React.FC = () => {
   const apiContext = useAPI();
   const { token } = useAPI();
   const [devices, setDevices] = useState<Device[]>([]);
-  const [tenants, setTenants] = useState<Tenant[]>([]); // State for tenants
+  const [tenants, setTenants] = useState<Tenant[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [creating, setCreating] = useState(false);
+  const [editingDeviceId, setEditingDeviceId] = useState<string | null>(null); // Track which device is being edited
   const [newDevice, setNewDevice] = useState<CreateDeviceData>({
     name: "",
     mac: "",
@@ -59,11 +61,11 @@ export const DevicesPage: React.FC = () => {
 
   useEffect(() => {
     fetchDevices();
-    fetchTenants(); // Fetch tenants when the component mounts
+    fetchTenants();
   }, [fetchDevices, fetchTenants]);
 
   const handleCreateDevice = async () => {
-    if (!token || !newDevice.tenant_id) return; // Ensure tenant is selected
+    if (!token || !newDevice.tenant_id) return;
     setLoading(true);
     setError("");
     try {
@@ -79,7 +81,7 @@ export const DevicesPage: React.FC = () => {
         minute_off: 0,
         auto: false,
         toggle: false,
-        tenant_id: "", // Reset tenant selection
+        tenant_id: "",
       });
     } catch (err) {
       console.error(err);
@@ -87,6 +89,63 @@ export const DevicesPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleEditDevice = (device: Device) => {
+    setEditingDeviceId(device._id);
+    setNewDevice({
+      name: device.name,
+      mac: device.mac,
+      hour_on: device.hour_on,
+      hour_off: device.hour_off,
+      minute_on: device.minute_on,
+      minute_off: device.minute_off,
+      auto: device.auto || false,
+      toggle: false,
+      tenant_id: device.tenant_id,
+    });
+  };
+
+  const handleUpdateDevice = async () => {
+    if (!token || !editingDeviceId) return;
+    setLoading(true);
+    setError("");
+    try {
+      await updateDevice(token, editingDeviceId, newDevice);
+      await fetchDevices();
+      setEditingDeviceId(null);
+      setNewDevice({
+        name: "",
+        mac: "",
+        hour_on: 0,
+        hour_off: 0,
+        minute_on: 0,
+        minute_off: 0,
+        auto: false,
+        toggle: false,
+        tenant_id: "",
+      });
+    } catch (err) {
+      console.error(err);
+      setError("Lỗi khi cập nhật thiết bị.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingDeviceId(null);
+    setNewDevice({
+      name: "",
+      mac: "",
+      hour_on: 0,
+      hour_off: 0,
+      minute_on: 0,
+      minute_off: 0,
+      auto: false,
+      toggle: false,
+      tenant_id: "",
+    });
   };
 
   const handleConfirmDelete = () => {
@@ -109,6 +168,7 @@ export const DevicesPage: React.FC = () => {
       setLoading(false);
     }
   };
+
   return (
     <div className="min-h-screen bg-gray-100 p-4">
       <div className="max-w-7xl mx-auto">
@@ -129,9 +189,11 @@ export const DevicesPage: React.FC = () => {
           </div>
         )}
 
-        {creating && (
+        {(creating || editingDeviceId) && (
           <div className="bg-white shadow-lg rounded-xl mb-6 p-4 md:p-6">
-            <h2 className="text-xl font-semibold mb-4">Thêm thiết bị mới</h2>
+            <h2 className="text-xl font-semibold mb-4">
+              {editingDeviceId ? "Chỉnh sửa thiết bị" : "Thêm thiết bị mới"}
+            </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -286,23 +348,25 @@ export const DevicesPage: React.FC = () => {
 
             <div className="mt-6 flex flex-col-reverse md:flex-row gap-3 md:justify-end">
               <button
-                onClick={() => setCreating(false)}
+                onClick={editingDeviceId ? handleCancelEdit : () => setCreating(false)}
                 className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
               >
                 Hủy bỏ
               </button>
               <button
-                onClick={handleCreateDevice}
+                onClick={editingDeviceId ? handleUpdateDevice : handleCreateDevice}
                 disabled={
                   !newDevice.name ||
                   !newDevice.mac ||
-                  !newDevice.tenant_id || // Ensure tenant is selected
+                  !newDevice.tenant_id ||
                   loading
                 }
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center"
               >
                 {loading ? (
                   <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                ) : editingDeviceId ? (
+                  "Cập nhật"
                 ) : (
                   "Tạo thiết bị"
                 )}
@@ -359,7 +423,18 @@ export const DevicesPage: React.FC = () => {
                             (tenant) => tenant._id === device.tenant_id
                           )?.name || "N/A"}
                         </td>
-                        <td className="px-4 py-4">
+                        <td className="px-4 py-4 flex gap-2">
+                          <button
+                            onClick={() => handleEditDevice(device)}
+                            className="text-blue-600 hover:text-blue-900 flex items-center"
+                            disabled={loading}
+                          >
+                            {loading ? (
+                              <div className="h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                            ) : (
+                              "Chỉnh sửa"
+                            )}
+                          </button>
                           <button
                             onClick={() => handleDeleteDevice(device._id)}
                             className="text-red-600 hover:text-red-900 flex items-center"

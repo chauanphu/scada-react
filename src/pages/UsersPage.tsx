@@ -403,9 +403,6 @@ export const UsersPage: React.FC = () => {
                         Vai trò
                       </th>
                       <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">
-                        Khách hàng
-                      </th>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">
                         Trạng thái
                       </th>
                       <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">
@@ -421,7 +418,6 @@ export const UsersPage: React.FC = () => {
                         </td>
                         <td className="px-4 py-4">{user.email}</td>
                         <td className="px-4 py-4">{user.role}</td>
-                        <td className="px-4 py-4">{user.tenant?.name || "-"}</td>
                         <td className="px-4 py-4">
                           <span
                             className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${

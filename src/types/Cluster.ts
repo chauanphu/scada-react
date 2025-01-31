@@ -45,7 +45,7 @@ export interface Schedule {
 
 export interface CreateDeviceData {
   name: string;
-  mac: string;
+  mac?: string;
   auto: boolean;
   toggle: boolean;
   hour_on?: number;
@@ -53,4 +53,14 @@ export interface CreateDeviceData {
   minute_on?: number;
   minute_off?: number;
   tenant_id?: string;
-} 
+}
+
+export interface EditDeviceData {
+  name: string;
+  mac: string;
+  hour_on?: number;
+  hour_off?: number;
+  minute_on?: number;
+  minute_off?: number;
+  tenant_id?: string;
+}

@@ -14,6 +14,12 @@ interface ReportFilters {
   aggregation: "hourly" | "daily" | "monthly";
 }
 
+enum View {
+  HOURLY = "hourly",
+  DAILY = "daily",
+  MONTHLY = "monthly",
+}
+
 interface ReportViewProps {
   device: Device;
 }
@@ -23,7 +29,7 @@ export const ReportView: React.FC<ReportViewProps> = ({ device }) => {
   const [filters, setFilters] = useState<ReportFilters>({
     startDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
     endDate: new Date().toISOString(),
-    aggregation: "daily",
+    aggregation: "hourly",
   });
   const [reportData, setReportData] = useState<EnergyData[]>([]);
 
@@ -33,18 +39,18 @@ export const ReportView: React.FC<ReportViewProps> = ({ device }) => {
     try {
       const response = await fetch(
         `${PUBLIC_API_URL}/report/?device_id=${device._id}` +
-        `&start_date=${filters.startDate}&end_date=${filters.endDate}` +
-        `&aggregation=${filters.aggregation}`,
+          `&start_date=${filters.startDate}&end_date=${filters.endDate}` +
+          `&aggregation=${filters.aggregation}`,
         {
           headers: { Authorization: `Bearer ${apiContext.token}` },
         }
       );
 
-      if (!response.ok) throw new Error('Failed to fetch report');
+      if (!response.ok) throw new Error("Failed to fetch report");
       const data = await response.json();
       setReportData(data);
     } catch (err) {
-      console.error('Report fetch error:', err);
+      console.error("Report fetch error:", err);
     }
   };
 
@@ -52,14 +58,71 @@ export const ReportView: React.FC<ReportViewProps> = ({ device }) => {
     void fetchReportData();
   }, [filters, device._id]);
 
+  // Convert UTC timestamp to local timezone (UTC+7)
+  const convertToLocalTime = (utcTimestamp: string) => {
+    const date = new Date(utcTimestamp);
+    const localTime = new Date(date.getTime() + 7 * 60 * 60 * 1000); // Add 7 hours for UTC+7
+    return localTime;
+  };
+
+  const labels = reportData.map((item) => {
+    const localDate = convertToLocalTime(item.timestamp); // Convert to local time
+    switch (filters.aggregation) {
+      case View.HOURLY:
+        // Format to show hour and minute in local time
+        return localDate.toLocaleString("default", {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false,
+        });
+      case View.DAILY:
+        // Format to show day and month in local time
+        return localDate.toLocaleString("default", {
+          day: "2-digit",
+          month: "2-digit",
+        });
+      case View.MONTHLY:
+        // Format to show month and year in local time
+        return localDate.toLocaleString("default", {
+          month: "long",
+          year: "numeric",
+        });
+      default:
+        return localDate.toLocaleDateString();
+    }
+  });
+
+  const energyData = reportData.map((item) => item.total_energy);
+
   const chartData = {
-    labels: reportData.map((d) => new Date(d.timestamp).toLocaleString()),
-    datasets: [{
-      label: 'Năng lượng tiêu thụ (W)',
-      data: reportData.map((d) => d.total_energy),
-      borderColor: 'rgb(59, 130, 246)',
-      tension: 0.1,
-    }],
+    labels: labels,
+    datasets: [
+      {
+        label: "Energy Consumption",
+        data: energyData,
+        borderColor: "rgba(75, 192, 192, 1)",
+        backgroundColor: "rgba(75, 192, 192, 0.2)",
+      },
+    ],
+  };
+
+  const options = {
+    responsive: true,
+    maintainAspectRatio: false,
+    scales: {
+      x: {
+        title: {
+          display: true,
+          text: "Time",
+        },
+      },
+      y: {
+        title: {
+          display: true,
+          text: "Total Energy (kWh)",
+        },
+      },
+    },
   };
 
   return (
@@ -68,26 +131,39 @@ export const ReportView: React.FC<ReportViewProps> = ({ device }) => {
       <div className="flex flex-col md:flex-row flex-wrap gap-4 items-center">
         <input
           type="date"
-          value={filters.startDate.split('T')[0]}
-          onChange={(e) => setFilters(prev => ({ ...prev, startDate: e.target.value }))}
+          value={filters.startDate.split("T")[0]}
+          onChange={(e) =>
+            setFilters((prev) => ({ ...prev, startDate: e.target.value }))
+          }
           className="p-2 border rounded w-full md:w-auto"
         />
         <input
           type="date"
-          value={filters.endDate.split('T')[0]}
-          onChange={(e) => setFilters(prev => ({ ...prev, endDate: e.target.value }))}
+          value={filters.endDate.split("T")[0]}
+          onChange={(e) =>
+            setFilters((prev) => ({ ...prev, endDate: e.target.value }))
+          }
           className="p-2 border rounded w-full md:w-auto"
         />
         <select
           value={filters.aggregation}
-          onChange={(e) => setFilters(prev => ({ ...prev, aggregation: e.target.value as any }))}
+          onChange={(e) =>
+            setFilters((prev) => ({
+              ...prev,
+              aggregation: e.target.value as any,
+            }))
+          }
           className="p-2 border rounded w-full md:w-auto"
         >
           <option value="hourly">Theo giờ</option>
           <option value="daily">Theo ngày</option>
           <option value="monthly">Theo tháng</option>
         </select>
-        <Button onClick={fetchReportData} size="sm" className="w-full md:w-auto">
+        <Button
+          onClick={fetchReportData}
+          size="sm"
+          className="w-full md:w-auto"
+        >
           Tải lại
         </Button>
       </div>
@@ -96,28 +172,7 @@ export const ReportView: React.FC<ReportViewProps> = ({ device }) => {
       {reportData.length > 0 ? (
         <div className="w-full overflow-x-auto">
           <div className="min-w-[600px] h-[400px] md:h-[500px]">
-            <Line
-              data={chartData}
-              options={{
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                  legend: {
-                    display: true,
-                    position: "top",
-                  },
-                },
-                scales: {
-                  x: {
-                    ticks: {
-                      autoSkip: true,
-                      maxRotation: 90,
-                      minRotation: 0,
-                    },
-                  },
-                },
-              }}
-            />
+            <Line data={chartData} options={options} />
           </div>
         </div>
       ) : (
