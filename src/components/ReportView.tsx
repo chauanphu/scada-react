@@ -1,0 +1,105 @@
+// New file: components/ReportView.tsx
+import React, { useEffect, useState } from "react";
+import { Line } from "react-chartjs-2";
+import { Button } from "./ui/button";
+import { PUBLIC_API_URL } from "../lib/api";
+import { useAPI } from "../contexts/APIProvider";
+import { Device } from "../types/Cluster";
+import { Chart, registerables } from "chart.js";
+Chart.register(...registerables);
+
+interface ReportFilters {
+  startDate: string;
+  endDate: string;
+  aggregation: "hourly" | "daily" | "monthly";
+}
+
+interface ReportViewProps {
+  device: Device;
+}
+
+export const ReportView: React.FC<ReportViewProps> = ({ device }) => {
+  const apiContext = useAPI();
+  const [filters, setFilters] = useState<ReportFilters>({
+    startDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+    endDate: new Date().toISOString(),
+    aggregation: "daily",
+  });
+  const [reportData, setReportData] = useState<any[]>([]);
+
+  const fetchReportData = async () => {
+    if (!apiContext?.token) return;
+    
+    try {
+      const response = await fetch(
+        `${PUBLIC_API_URL}/report/?device_id=${device._id}` +
+        `&start_date=${filters.startDate}&end_date=${filters.endDate}` +
+        `&aggregation=${filters.aggregation}`,
+        {
+          headers: { Authorization: `Bearer ${apiContext.token}` },
+        }
+      );
+
+      if (!response.ok) throw new Error('Failed to fetch report');
+      const data = await response.json();
+      setReportData(data);
+    } catch (err) {
+      console.error('Report fetch error:', err);
+    }
+  };
+
+  useEffect(() => {
+    void fetchReportData();
+  }, [filters, device._id]);
+
+  const chartData = {
+    labels: reportData.map((d) => new Date(d.timestamp).toLocaleString()),
+    datasets: [{
+      label: 'Power Consumption (W)',
+      data: reportData.map((d) => d.power),
+      borderColor: 'rgb(59, 130, 246)',
+      tension: 0.1,
+    }],
+  };
+
+  return (
+    <div className="p-4 space-y-4">
+      <div className="flex flex-wrap gap-4 items-center">
+        <input
+          type="date"
+          value={filters.startDate.split('T')[0]}
+          onChange={(e) => setFilters(prev => ({ ...prev, startDate: e.target.value }))}
+          className="p-2 border rounded"
+        />
+        <input
+          type="date"
+          value={filters.endDate.split('T')[0]}
+          onChange={(e) => setFilters(prev => ({ ...prev, endDate: e.target.value }))}
+          className="p-2 border rounded"
+        />
+        <select
+          value={filters.aggregation}
+          onChange={(e) => setFilters(prev => ({ ...prev, aggregation: e.target.value as any }))}
+          className="p-2 border rounded"
+        >
+          <option value="hourly">Hourly</option>
+          <option value="daily">Daily</option>
+          <option value="monthly">Monthly</option>
+        </select>
+        <Button onClick={fetchReportData} size="sm">
+          Refresh
+        </Button>
+      </div>
+      
+      {reportData.length > 0 ? (
+        <div className="h-96">
+          <Line data={chartData} options={{ responsive: true, maintainAspectRatio: false }} />
+        </div>
+      ) : (
+        <div className="text-center text-gray-500 py-8">
+          No report data available
+        </div>
+      )}
+    </div>
+  );
+};

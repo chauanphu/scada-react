@@ -48,44 +48,12 @@ export const DeviceDetails = ({
       setLoading(false);
     }
   };
-
   return (
     <div className="p-1 sm:p-3">
-      <h2 className="text-xl sm:text-2xl font-bold mb-0 mt-0">
-        {deviceStatus?.device_name || device.name}
-      </h2>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-1 md:gap-3">
-        <div className="bg-gray-50 p-1 sm:p-6 rounded-lg">
-          <h3 className="text-lg font-semibold mb-0">Thông tin thiết bị</h3>
-          <div className="space-y-3 sm:space-y-4">
-            <p>
-              <span className="font-medium">Địa chỉ MAC:</span>{" "}
-              {deviceStatus?.mac || device.mac}
-            </p>
-            <p>
-              <span className="font-medium">Lịch hoạt động:</span>{" "}
-              {deviceStatus?.schedule
-                ? `Mở lúc ${deviceStatus.schedule.hour_on}:${deviceStatus.schedule.minute_on}, tắt lúc ${deviceStatus.schedule.hour_off}:${deviceStatus.schedule.minute_off}`
-                : "Chưa thiết lập"}
-            </p>
-            {/* <p>
-              <span className="font-medium">Vị trí:</span>{" "}
-              {deviceStatus?.latitude && deviceStatus?.longitude
-                ? `${deviceStatus.latitude}, ${deviceStatus.longitude}`
-                : "Chưa thiết lập"}
-            </p>
-            <p>
-              <span className="font-medium">Ngày tạo:</span>{" "}
-              {device.created_at
-                ? new Date(device.created_at).toLocaleString()
-                : "N/A"}
-            </p> */}
-          </div>
-        </div>
-
         {deviceStatus && (
           <div className="bg-gray-50 p-1 rounded-lg">
-            <h3 className="text-lg font-semibold mb-0">Trạng thái</h3>
+            <h3 className="text-lg font-semibold mb-0">Bảng điều khiển</h3>
             <div className="space-y-4">
               <div>
                 <p className="mb-2">

@@ -34,7 +34,6 @@ export interface DeviceStatus {
   latitude?: number;
   longitude?: number;
   tenant_id: string;
-  schedule?: Schedule;
 }
 
 export interface Schedule {
