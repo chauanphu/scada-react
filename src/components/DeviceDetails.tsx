@@ -5,6 +5,7 @@ import { useAPI } from "../contexts/APIProvider";
 import { useWebSocket } from "../contexts/WebsocketProvider";
 import { useToast } from "../contexts/ToastProvider";
 import { Button } from "./ui/button";
+import { Input } from "./ui/input";
 
 interface DeviceDetailsProps {
   device: Device;
@@ -16,6 +17,11 @@ export const DeviceDetails = ({ device, deviceStatus }: DeviceDetailsProps) => {
   const wsContext = useWebSocket();
   const [loading, setLoading] = useState(false);
   const { addToast } = useToast();
+
+  const [hourOn, setHourOn] = useState(deviceStatus?.hour_on || 0);
+  const [minuteOn, setMinuteOn] = useState(deviceStatus?.minute_on || 0);
+  const [hourOff, setHourOff] = useState(deviceStatus?.hour_off || 0);
+  const [minuteOff, setMinuteOff] = useState(deviceStatus?.minute_off || 0);
 
   if (!apiContext || !wsContext) return null;
 
@@ -49,14 +55,14 @@ export const DeviceDetails = ({ device, deviceStatus }: DeviceDetailsProps) => {
     if (!deviceStatus) return;
     setLoading(true);
     try {
-      // Placeholder for schedule logic
       const newSchedule = {
-        hour_on: 8,
-        hour_off: 18,
-        minute_on: 0,
-        minute_off: 0,
+        hour_on: hourOn,
+        minute_on: minuteOn,
+        hour_off: hourOff,
+        minute_off: minuteOff,
       };
       await apiContext.setDeviceSchedule(device._id, newSchedule);
+      addToast("success", "Lịch trình đã được cập nhật");
     } catch (err) {
       console.error("Lỗi khi đặt lịch trình:", err);
       addToast("error", "Không thể đặt lịch trình");
@@ -67,7 +73,7 @@ export const DeviceDetails = ({ device, deviceStatus }: DeviceDetailsProps) => {
 
   return (
     <div className="p-4 space-y-4">
-      {/* Real-Time Status Indicator */}
+      {/* Device Name and Status */}
       <div className="flex items-center gap-2">
         <div
           className={`h-3 w-3 rounded-full ${
@@ -77,108 +83,125 @@ export const DeviceDetails = ({ device, deviceStatus }: DeviceDetailsProps) => {
         <span className="text-sm text-gray-600">
           {deviceStatus?.is_connected ? "Đã kết nối" : "Mất kết nối"}
         </span>
-      </div>
-
-      {/* Device Name */}
-      <div className="flex flex-col gap-2">
         <h3 className="text-lg font-semibold">{deviceStatus?.device_name || device.name}</h3>
       </div>
 
-      {/* Toggle Power Button */}
-      <div className="flex flex-col gap-2">
-        <Button
-          variant={deviceStatus?.toggle ? "destructive" : "default"}
-          onClick={handleTogglePower}
-          disabled={loading || !deviceStatus?.is_connected}
-          className="w-full md:w-auto"
-        >
-          {deviceStatus?.toggle ? "Tắt" : "Bật"}
-        </Button>
-      </div>
+      {/* Main Layout: Control Panel and Real-Time Indicators */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Left Half: Control Panel */}
+        <div className="space-y-4">
+          {/* Toggle Power Button */}
+          <div className="flex flex-col gap-2">
+            <Button
+              variant={deviceStatus?.toggle ? "destructive" : "default"}
+              onClick={handleTogglePower}
+              disabled={loading || !deviceStatus?.is_connected}
+              className="w-full"
+            >
+              {deviceStatus?.toggle ? "Tắt" : "Bật"}
+            </Button>
+          </div>
 
-      {/* Mode Selection */}
-      <div className="flex flex-col gap-2">
-        <h3 className="text-sm font-medium text-gray-700">Chế độ</h3>
-        <div className="flex gap-2">
-          <Button
-            variant={deviceStatus?.auto ? "outline" : "default"}
-            onClick={() => handleToggleAuto()}
-            disabled={loading || !deviceStatus?.is_connected}
-            className="w-full md:w-auto"
-          >
-            Thủ công
-          </Button>
-          <Button
-            variant={deviceStatus?.auto ? "default" : "outline"}
-            onClick={() => handleToggleAuto()}
-            disabled={loading || !deviceStatus?.is_connected}
-            className="w-full md:w-auto"
-          >
-            Tự động
-          </Button>
-        </div>
-      </div>
-
-      {/* Schedule Section */}
-      <div className="flex flex-col gap-2">
-        <h3 className="text-sm font-medium text-gray-700">Lịch trình</h3>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={handleSetSchedule}
-            disabled={loading || !deviceStatus?.is_connected}
-            className="w-full md:w-auto"
-          >
-            Đặt lịch
-          </Button>
-        </div>
-        {deviceStatus && (
-          <div className="space-y-1">
-            <div className="text-sm text-gray-600">
-              Bật lúc: {deviceStatus.hour_on}:{deviceStatus.minute_on}
-            </div>
-            <div className="text-sm text-gray-600">
-              Tắt lúc: {deviceStatus.hour_off}:{deviceStatus.minute_off}
+          {/* Mode Selection */}
+          <div className="flex flex-col gap-2">
+            <h3 className="text-sm font-medium text-gray-700">Chế độ</h3>
+            <div className="flex gap-2">
+              <Button
+                variant={deviceStatus?.auto ? "outline" : "default"}
+                onClick={() => handleToggleAuto()}
+                disabled={loading || !deviceStatus?.is_connected}
+                className="w-full"
+              >
+                Thủ công
+              </Button>
+              <Button
+                variant={deviceStatus?.auto ? "default" : "outline"}
+                onClick={() => handleToggleAuto()}
+                disabled={loading || !deviceStatus?.is_connected}
+                className="w-full"
+              >
+                Tự động
+              </Button>
             </div>
           </div>
-        )}
+
+          {/* Schedule Section */}
+          <div className="flex flex-col gap-2">
+            <h3 className="text-sm font-medium text-gray-700">Lịch trình</h3>
+            <div className="grid grid-cols-2 gap-2">
+              <Input
+                type="number"
+                placeholder="Giờ bật"
+                value={hourOn}
+                onChange={(e) => setHourOn(Number(e.target.value))}
+                min={0}
+                max={23}
+              />
+              <Input
+                type="number"
+                placeholder="Phút bật"
+                value={minuteOn}
+                onChange={(e) => setMinuteOn(Number(e.target.value))}
+                min={0}
+                max={59}
+              />
+              <Input
+                type="number"
+                placeholder="Giờ tắt"
+                value={hourOff}
+                onChange={(e) => setHourOff(Number(e.target.value))}
+                min={0}
+                max={23}
+              />
+              <Input
+                type="number"
+                placeholder="Phút tắt"
+                value={minuteOff}
+                onChange={(e) => setMinuteOff(Number(e.target.value))}
+                min={0}
+                max={59}
+              />
+            </div>
+            <Button
+              variant="outline"
+              onClick={handleSetSchedule}
+              disabled={loading || !deviceStatus?.is_connected}
+              className="w-full"
+            >
+              Đặt lịch
+            </Button>
+          </div>
+        </div>
+
+        {/* Right Half: Real-Time Indicators */}
+        <div className="space-y-4">
+          {/* Power Information */}
+          {deviceStatus && (
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <p className="text-sm text-gray-600">Công suất</p>
+                <p className="font-medium">{deviceStatus.power}W</p>
+              </div>
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <p className="text-sm text-gray-600">Dòng điện</p>
+                <p className="font-medium">{deviceStatus.current}A</p>
+              </div>
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <p className="text-sm text-gray-600">Điện áp</p>
+                <p className="font-medium">{deviceStatus.voltage}V</p>
+              </div>
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <p className="text-sm text-gray-600">Hệ số công suất</p>
+                <p className="font-medium">{deviceStatus.power_factor}</p>
+              </div>
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <p className="text-sm text-gray-600">Tổng năng lượng</p>
+                <p className="font-medium">{deviceStatus.total_energy}kWh</p>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
-
-      {/* Power Information */}
-      {deviceStatus && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <p className="text-sm text-gray-600">Công suất</p>
-            <p className="font-medium">{deviceStatus.power}W</p>
-          </div>
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <p className="text-sm text-gray-600">Dòng điện</p>
-            <p className="font-medium">{deviceStatus.current}A</p>
-          </div>
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <p className="text-sm text-gray-600">Điện áp</p>
-            <p className="font-medium">{deviceStatus.voltage}V</p>
-          </div>
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <p className="text-sm text-gray-600">Hệ số công suất</p>
-            <p className="font-medium">{deviceStatus.power_factor}</p>
-          </div>
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <p className="text-sm text-gray-600">Tổng năng lượng</p>
-            <p className="font-medium">{deviceStatus.total_energy}kWh</p>
-          </div>
-        </div>
-      )}
-
-      {/* Location Information */}
-      {deviceStatus?.latitude && deviceStatus?.longitude && (
-        <div className="flex flex-col gap-2">
-          <h3 className="text-sm font-medium text-gray-700">Vị trí</h3>
-          <div className="text-sm text-gray-600">
-            Vĩ độ: {deviceStatus.latitude}, Kinh độ: {deviceStatus.longitude}
-          </div>
-        </div>
-      )}
     </div>
   );
 };
