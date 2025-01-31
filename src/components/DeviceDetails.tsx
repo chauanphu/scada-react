@@ -89,15 +89,15 @@ export const DeviceDetails = ({
             <div className="space-y-4">
               <div>
                 <p className="mb-2">
-                  <span className="font-medium">Kết nối:</span>{" "}
+                  <span className="font-medium">Hoạt động :</span>{" "}
                   <span
                     className={
-                      deviceStatus.is_connected
+                      deviceStatus.toggle
                         ? "text-green-600"
                         : "text-red-600"
                     }
                   >
-                    {deviceStatus.is_connected ? "Đã kết nối" : "Mất kết nối"}
+                    {deviceStatus.toggle ? "Đang bật" : "Đang tắt"}
                   </span>
                 </p>
                 <button

@@ -17,7 +17,7 @@ export enum UserRole {
 }
 
 export type Role = {
-  role_id: number;
+  role_id: string;
   role_name: UserRole;
 };
 
@@ -25,10 +25,19 @@ export type User = {
   user_id: number;
   username: string;
   email: string;
-  role: Role;
+  role: string;
   password?: string;
   disabled?: boolean;
 };
+
+export type CreateUser = {
+  username: string;
+  email: string;
+  role: string;
+  disabled?: boolean;
+  password: string;
+  tenant_id?: string;
+}
 
 export type TokenResponse = {
   access_token: string;
@@ -126,7 +135,7 @@ export async function getUsers(token: string): Promise<User[]> {
 
 export async function createUser(
   token: string,
-  userData: Partial<User>
+  userData: Partial<CreateUser>
 ): Promise<User> {
   const response = await fetch(`${PUBLIC_API_URL}/users/`, {
     method: "POST",
@@ -146,8 +155,8 @@ export async function createUser(
 
 export async function updateUser(
   token: string,
-  userId: number,
-  userData: Partial<User>
+  userId: string,
+  userData: Partial<CreateUser>
 ): Promise<User> {
   const response = await fetch(`${PUBLIC_API_URL}/users/${userId}`, {
     method: "PATCH",
@@ -165,7 +174,7 @@ export async function updateUser(
   return response.json();
 }
 
-export async function deleteUser(token: string, userId: number): Promise<User> {
+export async function deleteUser(token: string, userId: string): Promise<User> {
   const response = await fetch(`${PUBLIC_API_URL}/users/${userId}`, {
     method: "DELETE",
     headers: {

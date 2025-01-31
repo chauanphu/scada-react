@@ -67,8 +67,8 @@ interface APIContextType {
   hasPermission: (path: string) => boolean;
   getUsers: () => Promise<User[]>;
   createUser: (userData: Partial<User>) => Promise<User>;
-  updateUser: (userId: number, userData: Partial<User>) => Promise<User>;
-  deleteUser: (userId: number) => Promise<void | User>;
+  updateUser: (userId: string, userData: Partial<User>) => Promise<User>;
+  deleteUser: (userId: string) => Promise<void | User>;
   getDevices: () => Promise<Device[]>;
   createDevice: (deviceData: CreateDeviceData) => Promise<Device>;
   updateDevice: (
@@ -124,6 +124,7 @@ export function APIProvider({ children }: { children: ReactNode }) {
     // Set userRole from cookies
     const role = Cookies.get("userRole") as UserRole;
     setUserRole(role);
+    setPermissions(ROLE_PERMISSIONS[role] || []);
   }, [token]);
 
   const login = async (username: string, password: string) => {
@@ -172,9 +173,9 @@ export function APIProvider({ children }: { children: ReactNode }) {
     hasPermission,
     getUsers: () => getUsers(token || ""),
     createUser: (userData: Partial<User>) => createUser(token || "", userData),
-    updateUser: (userId: number, userData: Partial<User>) =>
+    updateUser: (userId: string, userData: Partial<User>) =>
       updateUser(token || "", userId, userData),
-    deleteUser: (userId: number) => deleteUser(token || "", userId),
+    deleteUser: (userId: string) => deleteUser(token || "", userId),
     getDevices: () => getDevices(token || ""),
     createDevice: (deviceData: CreateDeviceData) =>
       createDevice(token || "", deviceData),
