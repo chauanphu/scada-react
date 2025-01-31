@@ -141,13 +141,14 @@ export const HomePage = () => {
             </div>
           </div>
           <div className="md:hidden absolute place-content-center pt-5 justify-self-center">
-            <div className=""></div>
-            <button
+            <div className="flex justify-center">
+              <button
               className="w-full p-2 bg-blue-500 text-white rounded self-center focus:outline-none focus:ring-2 focus:ring-blue-500"
               onClick={() => setShowDeviceList(true)}
-            >
+              >
               Tìm kiếm thiết bị
-            </button>
+              </button>
+            </div>
           {showDeviceList && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center pt-[100%] z-50">
               <div className="bg-white p-4 rounded-lg shadow-lg w-11/12 max-h-[80vh] overflow-y-scroll">

@@ -26,7 +26,6 @@ export const DeviceList: React.FC<DeviceListProps> = ({
     if (target.closest("button")) return; // Don't select if clicking buttons
     onDeviceSelect(device);
   };
-
   return (
     <div className="h-full overflow-y-auto bg-white">
       <div className="space-y-2 p-4">
@@ -53,82 +52,54 @@ export const DeviceList: React.FC<DeviceListProps> = ({
                     <h3 className="font-medium text-gray-900 text-lg break-words">
                       {status?.device_name || device.name}
                     </h3>
-                    {status && status.is_connected ? (
-                      <div className="mt-2 text-sm text-gray-600 space-y-1">
-                        <div className="grid grid-cols-2 gap-1">
-                          <div className="bg-gray-50 p-1 rounded">
-                            <span className="text-xs text-gray-500">
-                              Trạng Thái
-                            </span>
-                            <p className="font-medium">
-                              {status.toggle ? "Bật" : "Tắt"}
-                            </p>
-                          </div>
-                          <div className="bg-gray-50 p-1 rounded">
-                            <span className="text-xs text-gray-500">
-                              Chế độ
-                            </span>
-                            <p className="font-medium">
-                              {status.auto ? "Tự Động" : "Thủ Công"}
-                            </p>
-                          </div>
-                        </div>
-                        {status.power > 0 && (
-                          <div className="bg-gray-50 p-1 rounded">
-                            <span className="text-xs text-gray-500">
-                              Công suất
-                            </span>
-                            <p className="font-medium">{status.power}W</p>
-                          </div>
-                        )}
-                      </div>
+                  </div>
+                </div>
+                <div className="mt-2 flex justify-between items-center">
+                  {
+                    status?.is_connected ? (
+                      <div className="flex items-center gap-2">
+                      <span className={`text-sm text-gray-600 ${status?.toggle ? "text-green-500" : "text-red-500"}`}>
+                        Trạng thái: {status?.toggle ? "Bật" : "Tắt"}
+                      </span>
+                      <span className="text-sm text-gray-600">
+                        {status.power !== undefined ? `${status.power} W` : "N/A"}
+                      </span>
+                    </div>
                     ) : (
                       <div className="text-sm text-gray-500">
-                        Đang tải dữ liệu...
+                        Đang lấy dữ liệu...
                       </div>
-                    )}
-                  </div>
-                  {status && (
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm">
-                        {status.is_connected ? "Đã kết nối" : "Mất kết nối"}
-                      </span>
-                      <div
-                        className={`h-3 w-3 rounded-full flex-shrink-0 ${
-                          status.is_connected ? "bg-green-500" : "bg-red-500"
-                        }`}
-                      />
+                    )
+                  }
+                  {(onEditDevice || onDeleteDevice) && (
+                    <div className="flex justify-end space-x-2">
+                      {onEditDevice && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onEditDevice(device);
+                          }}
+                        >
+                          Chỉnh sửa
+                        </Button>
+                      )}
+                      {onDeleteDevice && (
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onDeleteDevice(device._id);
+                          }}
+                        >
+                          Xóa
+                        </Button>
+                      )}
                     </div>
                   )}
                 </div>
-                {(onEditDevice || onDeleteDevice) && (
-                  <div className="mt-4 flex justify-end space-x-2">
-                    {onEditDevice && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onEditDevice(device);
-                        }}
-                      >
-                        Chỉnh sửa
-                      </Button>
-                    )}
-                    {onDeleteDevice && (
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onDeleteDevice(device._id);
-                        }}
-                      >
-                        Xóa
-                      </Button>
-                    )}
-                  </div>
-                )}
               </div>
             );
           })
