@@ -79,23 +79,25 @@ export const HomePage = () => {
         {/* Main Content Area */}
         <div className="flex-1 p-2 bg-gray-100 overflow-hidden">
           {/* Toggle Buttons */}
-          <div className="flex justify-between p-4 bg-white rounded-t-lg shadow-lg">
-            <div className="flex gap-2">
-              <Button
-                variant={activeView === "control" ? "default" : "outline"}
-                onClick={() => setActiveView("control")}
-              >
-                Bảng điều khiển
-              </Button>
-              <Button
-                variant={activeView === "report" ? "default" : "outline"}
-                onClick={() => setActiveView("report")}
-                disabled={!selectedDevice}
-              >
-                Báo cáo tiêu thụ
-              </Button>
+          {selectedDevice && (
+            <div className="flex justify-between p-4 bg-white rounded-t-lg shadow-lg">
+              <div className="flex gap-2">
+                <Button
+                  variant={activeView === "control" ? "default" : "outline"}
+                  onClick={() => setActiveView("control")}
+                >
+                  Bảng điều khiển
+                </Button>
+                <Button
+                  variant={activeView === "report" ? "default" : "outline"}
+                  onClick={() => setActiveView("report")}
+                  disabled={!selectedDevice}
+                >
+                  Báo cáo tiêu thụ
+                </Button>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Content Area */}
           <div className="h-[calc(100%-4rem)] bg-white rounded-b-lg shadow-lg overflow-hidden">
@@ -117,7 +119,9 @@ export const HomePage = () => {
                   {selectedDevice ? (
                     <DeviceDetails
                       device={selectedDevice}
-                      deviceStatus={wsContext.deviceStatuses[selectedDevice._id]}
+                      deviceStatus={
+                        wsContext.deviceStatuses[selectedDevice._id]
+                      }
                     />
                   ) : (
                     <div className="flex items-center justify-center h-full text-gray-500">
