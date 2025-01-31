@@ -5,6 +5,7 @@ import { PUBLIC_API_URL } from "../lib/api";
 import { useAPI } from "../contexts/APIProvider";
 import { Device } from "../types/Cluster";
 import { Chart, registerables } from "chart.js";
+import { EnergyData } from "../types/Report";
 Chart.register(...registerables);
 
 interface ReportFilters {
@@ -24,7 +25,7 @@ export const ReportView: React.FC<ReportViewProps> = ({ device }) => {
     endDate: new Date().toISOString(),
     aggregation: "daily",
   });
-  const [reportData, setReportData] = useState<any[]>([]);
+  const [reportData, setReportData] = useState<EnergyData[]>([]);
 
   const fetchReportData = async () => {
     if (!apiContext?.token) return;
@@ -54,8 +55,8 @@ export const ReportView: React.FC<ReportViewProps> = ({ device }) => {
   const chartData = {
     labels: reportData.map((d) => new Date(d.timestamp).toLocaleString()),
     datasets: [{
-      label: 'Power Consumption (W)',
-      data: reportData.map((d) => d.power),
+      label: 'Năng lượng tiêu thụ (W)',
+      data: reportData.map((d) => d.total_energy),
       borderColor: 'rgb(59, 130, 246)',
       tension: 0.1,
     }],
@@ -82,12 +83,12 @@ export const ReportView: React.FC<ReportViewProps> = ({ device }) => {
           onChange={(e) => setFilters(prev => ({ ...prev, aggregation: e.target.value as any }))}
           className="p-2 border rounded w-full md:w-auto"
         >
-          <option value="hourly">Hourly</option>
-          <option value="daily">Daily</option>
-          <option value="monthly">Monthly</option>
+          <option value="hourly">Theo giờ</option>
+          <option value="daily">Theo ngày</option>
+          <option value="monthly">Theo tháng</option>
         </select>
         <Button onClick={fetchReportData} size="sm" className="w-full md:w-auto">
-          Refresh
+          Tải lại
         </Button>
       </div>
 
@@ -110,7 +111,7 @@ export const ReportView: React.FC<ReportViewProps> = ({ device }) => {
                   x: {
                     ticks: {
                       autoSkip: true,
-                      maxRotation: 0,
+                      maxRotation: 90,
                       minRotation: 0,
                     },
                   },
