@@ -163,12 +163,12 @@ export const DeviceDetails = ({ device, deviceStatus }: DeviceDetailsProps) => {
               />
             </div>
             <Button
-              variant="outline"
+              variant="default"
               onClick={handleSetSchedule}
               disabled={loading || !deviceStatus?.is_connected}
               className="w-full"
             >
-              Đặt lịch
+              Cài đặt lịch hoạt động
             </Button>
           </div>
         </div>
@@ -196,7 +196,7 @@ export const DeviceDetails = ({ device, deviceStatus }: DeviceDetailsProps) => {
               </div>
               <div className="bg-gray-50 p-4 rounded-lg">
                 <p className="text-sm text-gray-600">Tổng năng lượng</p>
-                <p className="font-medium">{deviceStatus.total_energy}kWh</p>
+                <p className="font-medium">{deviceStatus.total_energy.toFixed(4)}kWh</p>
               </div>
             </div>
           )}

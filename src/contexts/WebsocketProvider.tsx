@@ -140,7 +140,6 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
     };
 
     ws.onerror = (error: Event) => {
-       
       console.error('WebSocket error:', error);
     };
 
@@ -152,14 +151,14 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
           console.warn('Invalid message format:', messageArray);
           return;
         }
-
-        const deviceStatus = JSON.parse(messageArray[0]) as DeviceStatus;
-        if (!deviceStatus?.device_id) {
-          console.warn('Invalid device status:', deviceStatus);
-          return;
+        for (let i = 0; i < messageArray.length; i++) {
+          const deviceStatus = JSON.parse(messageArray[i]) as DeviceStatus;
+          if (!deviceStatus?.device_id) {
+            console.warn('Invalid device status:', deviceStatus);
+            continue;
+          }
+          handleDeviceStatus(deviceStatus);
         }
-
-        handleDeviceStatus(deviceStatus);
       } catch (err) {
          
         console.error('Error processing WebSocket message:', err);
