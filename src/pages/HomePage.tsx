@@ -153,21 +153,46 @@ export const HomePage = () => {
 
         {/* Mobile Device List Modal */}
         {showDeviceList && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white p-4 rounded-lg shadow-lg w-11/12 max-h-[80vh] overflow-y-scroll">
-              <button
-                className="absolute top-2 right-2 text-4xl text-gray-500"
-                onClick={() => setShowDeviceList(false)}
-              >
-                &times;
-              </button>
-              <input
-                type="text"
-                placeholder="Tìm kiếm thiết bị..."
-                className="w-full p-2 mb-4 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
+          <div
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]"
+            onClick={() => setShowDeviceList(false)}
+          >
+            <div
+              className="bg-white p-4 rounded-lg shadow-lg w-11/12 max-h-[80vh] overflow-y-auto relative"
+              onClick={(e) => e.stopPropagation()} // Prevent click propagation to backdrop
+            >
+              <div className="sticky top-0 bg-white pb-4">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-xl font-semibold">Chọn thiết bị</h2>
+                  <button
+                    className="p-2 text-gray-500 hover:text-gray-700"
+                    onClick={() => setShowDeviceList(false)}
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-6 w-6"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M6 18L18 6M6 6l12 12"
+                      />
+                    </svg>
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  placeholder="Tìm kiếm thiết bị..."
+                  className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+
               <DeviceList
                 devices={filteredDevices}
                 onDeviceSelect={(device) => {
@@ -176,6 +201,16 @@ export const HomePage = () => {
                 }}
                 selectedDevice={selectedDevice}
               />
+
+              {/* Bottom close button for mobile */}
+              <div className="sticky bottom-0 bg-white pt-4 border-t">
+                <button
+                  className="w-full p-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+                  onClick={() => setShowDeviceList(false)}
+                >
+                  Đóng
+                </button>
+              </div>
             </div>
           </div>
         )}
