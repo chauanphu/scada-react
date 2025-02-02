@@ -165,7 +165,7 @@ export const FirmwarePage = () => {
               <p>Phiên bản: {latestFirmware.version}</p>
               <p>
                 Ngày tải lên:{" "}
-                {new Date(latestFirmware.upload_date).toLocaleString()}
+                {new Date(latestFirmware.upload_time).toLocaleString()}
               </p>
             </div>
           ) : (

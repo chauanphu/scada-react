@@ -293,7 +293,7 @@ export async function setDeviceAuto(
 ): Promise<void> {
   try {
     const response = await fetch(
-      `${PUBLIC_API_URL}/devices/auto/${deviceId}`,
+      `${PUBLIC_API_URL}/devices/auto/${deviceId}?value=${auto}`,
       {
         method: "PUT",
         headers: {
@@ -623,8 +623,8 @@ export const Permissions = {
 // Firmware interfaces
 export interface FirmwareMetadata {
   version: string;
-  filename: string;
-  upload_date: string;
+  hash_value: string;
+  upload_time: string;
 }
 
 // Get latest firmware version
@@ -654,10 +654,9 @@ export async function uploadFirmware(
   file: File
 ): Promise<FirmwareMetadata> {
   const formData = new FormData();
-  formData.append("version", version);
   formData.append("file", file);
 
-  const response = await fetch(`${PUBLIC_API_URL}/firmware/upload/`, {
+  const response = await fetch(`${PUBLIC_API_URL}/firmware/upload/?version=${version}`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,

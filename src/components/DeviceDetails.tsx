@@ -30,6 +30,7 @@ export const DeviceDetails = ({ device, deviceStatus }: DeviceDetailsProps) => {
     setLoading(true);
     try {
       await apiContext.toggleDevice(device._id, !deviceStatus.toggle);
+      addToast("success", `Đã ${deviceStatus.toggle ? "tắt" : "bật"} thiết bị`);
     } catch (err) {
       console.error("Lỗi khi thay đổi trạng thái:", err);
       addToast("error", "Không thể thay đổi trạng thái");
@@ -43,6 +44,7 @@ export const DeviceDetails = ({ device, deviceStatus }: DeviceDetailsProps) => {
     setLoading(true);
     try {
       await apiContext.setDeviceAuto(device._id, !deviceStatus.auto);
+      addToast("success", `Đã ${deviceStatus.auto ? "tắt" : "bật"} chế độ tự động`);
     } catch (err) {
       console.error("Lỗi khi thay đổi chế độ tự động:", err);
       addToast("error", "Không thể thay đổi chế độ");
