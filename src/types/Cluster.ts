@@ -8,7 +8,10 @@ export interface Device {
   latitude?: number;
   longitude?: number;
   auto?: boolean;
-  schedule?: Schedule;
+  hour_on?: number;
+  hour_off?: number;
+  minute_on?: number;
+  minute_off?: number;
 }
 
 export interface DeviceStatus {
@@ -31,7 +34,6 @@ export interface DeviceStatus {
   latitude?: number;
   longitude?: number;
   tenant_id: string;
-  schedule?: Schedule;
 }
 
 export interface Schedule {
@@ -39,14 +41,26 @@ export interface Schedule {
   minute_on: number;
   hour_off: number;
   minute_off: number;
-  days: number[];
 }
 
 export interface CreateDeviceData {
   name: string;
+  mac?: string;
+  auto: boolean;
+  toggle: boolean;
+  hour_on?: number;
+  hour_off?: number;
+  minute_on?: number;
+  minute_off?: number;
+  tenant_id?: string;
+}
+
+export interface EditDeviceData {
+  name: string;
   mac: string;
-  latitude?: number;
-  longitude?: number;
-  auto?: boolean;
-  schedule?: Schedule;
-} 
+  hour_on?: number;
+  hour_off?: number;
+  minute_on?: number;
+  minute_off?: number;
+  tenant_id?: string;
+}

@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { Device } from "../types/Cluster";
-import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, useMap } from "react-leaflet";
 import L, { LatLngExpression, LatLngBoundsLiteral } from "leaflet";
 import "leaflet/dist/leaflet.css";
 import iconOn from "../images/markers/on.png";
@@ -72,12 +72,6 @@ export const DeviceMap = ({
   const wsContext = useWebSocket();
   const deviceStatuses: Record<string, DeviceStatus> = wsContext?.deviceStatuses || {};
 
-  // console.log('Hiển thị bản đồ thiết bị:', {
-  //   devices,
-  //   selectedDevice,
-  //   deviceStatuses
-  // });
-
   const createIcon = (status: boolean, power: boolean, name: string) => {
     const iconUrl = status ? (power ? iconOn : iconOff) : iconDisable;
     
@@ -137,10 +131,6 @@ export const DeviceMap = ({
           <MapController devices={devices} selectedDevice={selectedDevice} />
           {validDevices.map((device) => {
             const status = deviceStatuses[device._id];
-            // console.log(`Tạo điểm đánh dấu cho thiết bị ${device._id}:`, {
-            //   device,
-            //   status
-            // });
 
             const icon = createIcon(
               status?.is_connected || false,
@@ -157,48 +147,10 @@ export const DeviceMap = ({
                   click: () => onDeviceSelect(device),
                 }}
               >
-                <Popup>
-                  <div className="p-2">
-                    <h3 className="font-medium">{device.name}</h3>
-                    <p className="text-sm text-gray-500">{device.mac}</p>
-                    <p className="text-xs text-gray-400 mt-1">
-                      {device.latitude?.toFixed(6)}, {device.longitude?.toFixed(6)}
-                    </p>
-                    {status && (
-                      <div className="mt-2 space-y-1">
-                        <p className="text-sm flex items-center gap-2">
-                          Trạng thái: 
-                          <span className={status.is_connected ? "text-green-600" : "text-red-600"}>
-                            {status.is_connected ? "Đã kết nối" : "Mất kết nối"}
-                          </span>
-                        </p>
-                        <p className="text-sm">
-                          Nguồn điện: {status.toggle ? "Bật" : "Tắt"}
-                        </p>
-                        <p className="text-sm">
-                          Chế độ: {status.auto ? "Tự động" : "Thủ công"}
-                        </p>
-                        {status.power > 0 && (
-                          <p className="text-sm">
-                            Công suất: {status.power}W
-                          </p>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </Popup>
               </Marker>
             );
           })}
         </MapContainer>
-        <div className="absolute top-2 right-2 z-[1000] bg-white rounded-lg shadow-lg">
-          <button
-            className="px-4 py-2 text-sm hover:bg-gray-100 rounded-lg transition-colors"
-            onClick={() => onDeviceSelect(null)}
-          >
-            Đặt lại góc nhìn
-          </button>
-        </div>
       </div>
     </div>
   );

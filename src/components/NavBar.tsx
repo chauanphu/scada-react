@@ -21,12 +21,16 @@ export const Navbar = () => {
   }
 
   const { hasPermission } = apiContext;
-
   const tabs = [
     {
       name: "Trang chủ",
       href: "/",
       permission: "/",
+    },
+    {
+      name: "Khách hàng",
+      href: "/tenants",
+      permission: "/tenants",
     },
     {
       name: "Thiết bị",
@@ -38,11 +42,11 @@ export const Navbar = () => {
       href: "/users",
       permission: "/users",
     },
-    {
-      name: "Phân quyền",
-      href: "/roles",
-      permission: "/roles",
-    },
+    // {
+    //   name: "Phân quyền",
+    //   href: "/roles",
+    //   permission: "/roles",
+    // },
     {
       name: "Nhật ký",
       href: "/audit",
