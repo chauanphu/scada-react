@@ -54,84 +54,54 @@ export const HomePage = () => {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-6rem)] -mt-8 -mx-4 pt-6">
-      <div className="flex flex-1 overflow-hidden">
-        {/* Left Sidebar (unchanged) */}
-        <div className="w-1/5 overflow-y-hidden rounded-lg hidden md:block">
-          <div className="p-4 pt-8 bg-white shadow-lg rounded-lg">
-            <input
-              type="text"
-              placeholder="Tìm kiếm thiết bị..."
-              className="w-full p-2 mb-4 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-            <div className="overflow-y-scroll h-[68vh] max-h-[68vh]">
-              <DeviceList
-                devices={filteredDevices}
-                onDeviceSelect={handleDeviceSelect}
-                selectedDevice={selectedDevice}
-              />
-            </div>
-          </div>
+    <div className="h-[calc(100vh-6rem)] -mt-8 -mx-4 pt-6">
+      {/* ===================== Desktop / Laptop Layout (3 columns) ===================== */}
+      <div className="hidden md:grid grid-cols-6 gap-4 h-full">
+        {/* Left Column: Device List (smaller; ~1/6 width) */}
+        <div className="col-span-1 bg-white shadow-lg rounded-lg p-4 overflow-y-auto">
+          <input
+            type="text"
+            placeholder="Tìm kiếm thiết bị..."
+            className="w-full p-2 mb-4 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+          <DeviceList
+            devices={filteredDevices}
+            onDeviceSelect={handleDeviceSelect}
+            selectedDevice={selectedDevice}
+          />
         </div>
 
-        {/* Main Content Area */}
-        <div className="flex-1 p-2 bg-gray-100 overflow-hidden">
-          {/* Toggle Buttons */}
+        {/* Center Column: Device Map / Report View (wider; ~2/3 width) */}
+        <div className="col-span-4 bg-gray-100 shadow-lg rounded-lg flex flex-col overflow-hidden">
           {selectedDevice && (
-            <div className="flex justify-between p-4 bg-white rounded-t-lg shadow-lg">
-              <div className="flex gap-2">
-                <Button
-                  variant={activeView === "control" ? "default" : "outline"}
-                  onClick={() => setActiveView("control")}
-                >
-                  Bảng điều khiển
-                </Button>
-                <Button
-                  variant={activeView === "report" ? "default" : "outline"}
-                  onClick={() => setActiveView("report")}
-                  disabled={!selectedDevice}
-                >
-                  Báo cáo tiêu thụ
-                </Button>
-              </div>
+            <div className="p-4 bg-white flex gap-2">
+              <Button
+                variant={activeView === "control" ? "default" : "outline"}
+                onClick={() => setActiveView("control")}
+              >
+                Bảng điều khiển
+              </Button>
+              <Button
+                variant={activeView === "report" ? "default" : "outline"}
+                onClick={() => setActiveView("report")}
+                disabled={!selectedDevice}
+              >
+                Báo cáo tiêu thụ
+              </Button>
             </div>
           )}
-
-          {/* Content Area */}
-          <div className="h-[calc(100%-4rem)] bg-white rounded-b-lg shadow-lg overflow-hidden">
+          <div className="flex-1 overflow-hidden">
             {activeView === "control" ? (
-              <>
-                {/* Device Map (Top Half) */}
-                <div className="h-1/2 border-b">
-                  <ErrorBoundary>
-                    <DeviceMap
-                      devices={devices}
-                      onDeviceSelect={handleDeviceSelect}
-                      selectedDevice={selectedDevice}
-                    />
-                  </ErrorBoundary>
-                </div>
-
-                {/* Device Details (Bottom Half) */}
-                <div className="h-1/2 overflow-y-auto">
-                  {selectedDevice ? (
-                    <DeviceDetails
-                      device={selectedDevice}
-                      deviceStatus={
-                        wsContext.deviceStatuses[selectedDevice._id]
-                      }
-                    />
-                  ) : (
-                    <div className="flex items-center justify-center h-full text-gray-500">
-                      Chọn thiết bị để xem chi tiết
-                    </div>
-                  )}
-                </div>
-              </>
+              <ErrorBoundary>
+                <DeviceMap
+                  devices={devices}
+                  onDeviceSelect={handleDeviceSelect}
+                  selectedDevice={selectedDevice}
+                />
+              </ErrorBoundary>
             ) : (
-              /* Full-Screen Report View */
               selectedDevice && (
                 <div className="h-full overflow-hidden">
                   <ReportView device={selectedDevice} />
@@ -141,80 +111,148 @@ export const HomePage = () => {
           </div>
         </div>
 
-        {/* Mobile Device List Button */}
-        <div className="md:hidden fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50">
+        {/* Right Column: Device Details (redesigned to fit narrow sidebar; ~1/6 width) */}
+        <div className="col-span-1 bg-white shadow-lg rounded-lg p-4 overflow-y-auto">
+          {selectedDevice ? (
+            <DeviceDetails
+              device={selectedDevice}
+              deviceStatus={wsContext.deviceStatuses[selectedDevice._id]}
+            />
+          ) : (
+            <div className="flex items-center justify-center h-full text-gray-500">
+              Chọn thiết bị để xem chi tiết
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ===================== Mobile Layout (Stacked / Single Column) ===================== */}
+      <div className="md:hidden flex flex-col h-full">
+        {/* Top Bar: Button to open the Device List modal */}
+        <div className="p-4 bg-white shadow-lg">
           <button
-            className="p-2 bg-blue-500 text-white rounded-lg shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full p-2 bg-blue-500 text-white rounded-lg shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             onClick={() => setShowDeviceList(true)}
           >
             Tìm kiếm thiết bị
           </button>
         </div>
 
-        {/* Mobile Device List Modal */}
-        {showDeviceList && (
-          <div
-            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]"
-            onClick={() => setShowDeviceList(false)}
-          >
-            <div
-              className="bg-white p-4 rounded-lg shadow-lg w-11/12 max-h-[80vh] overflow-y-auto relative"
-              onClick={(e) => e.stopPropagation()} // Prevent click propagation to backdrop
-            >
-              <div className="sticky top-0 bg-white pb-4">
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-xl font-semibold">Chọn thiết bị</h2>
-                  <button
-                    className="p-2 text-gray-500 hover:text-gray-700"
-                    onClick={() => setShowDeviceList(false)}
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-6 w-6"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M6 18L18 6M6 6l12 12"
-                      />
-                    </svg>
-                  </button>
-                </div>
-                <input
-                  type="text"
-                  placeholder="Tìm kiếm thiết bị..."
-                  className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+        {/* Main Content: Toggle Buttons and Map / Report View */}
+        <div className="flex-1 p-2">
+          {selectedDevice && (
+            <div className="mb-2 flex gap-2">
+              <Button
+                variant={activeView === "control" ? "default" : "outline"}
+                onClick={() => setActiveView("control")}
+              >
+                Bảng điều khiển
+              </Button>
+              <Button
+                variant={activeView === "report" ? "default" : "outline"}
+                onClick={() => setActiveView("report")}
+                disabled={!selectedDevice}
+              >
+                Báo cáo tiêu thụ
+              </Button>
+            </div>
+          )}
+          <div className="h-64 overflow-hidden bg-gray-100 shadow-lg rounded-lg">
+            {activeView === "control" ? (
+              <ErrorBoundary>
+                <DeviceMap
+                  devices={devices}
+                  onDeviceSelect={handleDeviceSelect}
+                  selectedDevice={selectedDevice}
                 />
-              </div>
+              </ErrorBoundary>
+            ) : (
+              selectedDevice && (
+                <div className="h-full overflow-hidden">
+                  <ReportView device={selectedDevice} />
+                </div>
+              )
+            )}
+          </div>
+        </div>
 
-              <DeviceList
-                devices={filteredDevices}
-                onDeviceSelect={(device) => {
-                  handleDeviceSelect(device);
-                  setShowDeviceList(false);
-                }}
-                selectedDevice={selectedDevice}
-              />
+        {/* Bottom Section: Device Details */}
+        <div className="p-4 bg-white shadow-lg">
+          {selectedDevice ? (
+            <DeviceDetails
+              device={selectedDevice}
+              deviceStatus={wsContext.deviceStatuses[selectedDevice._id]}
+            />
+          ) : (
+            <div className="flex items-center justify-center text-gray-500">
+              Chọn thiết bị để xem chi tiết
+            </div>
+          )}
+        </div>
+      </div>
 
-              {/* Bottom close button for mobile */}
-              <div className="sticky bottom-0 bg-white pt-4 border-t">
+      {/* ===================== Mobile Device List Modal ===================== */}
+      {showDeviceList && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]"
+          onClick={() => setShowDeviceList(false)}
+        >
+          <div
+            className="bg-white p-4 rounded-lg shadow-lg w-11/12 max-h-[80vh] overflow-y-auto relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="sticky top-0 bg-white pb-4">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold">Chọn thiết bị</h2>
                 <button
-                  className="w-full p-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+                  className="p-2 text-gray-500 hover:text-gray-700"
                   onClick={() => setShowDeviceList(false)}
                 >
-                  Đóng
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-6 w-6"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
                 </button>
               </div>
+              <input
+                type="text"
+                placeholder="Tìm kiếm thiết bị..."
+                className="w-full p-2 mb-4 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+
+            <DeviceList
+              devices={filteredDevices}
+              onDeviceSelect={(device) => {
+                handleDeviceSelect(device);
+                setShowDeviceList(false);
+              }}
+              selectedDevice={selectedDevice}
+            />
+
+            <div className="sticky bottom-0 bg-white pt-4 border-t">
+              <button
+                className="w-full p-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+                onClick={() => setShowDeviceList(false)}
+              >
+                Đóng
+              </button>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 };

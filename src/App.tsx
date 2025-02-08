@@ -4,7 +4,6 @@ import { HomePage } from "./pages/HomePage";
 import { TenantPage } from "./pages/TenantPage";
 import { DevicesPage } from "./pages/DevicesPage";
 import { UsersPage } from "./pages/UsersPage";
-import { RolesPage } from "./pages/RolesPage";
 import { AuditPage } from "./pages/AuditPage";
 import { FirmwarePage } from "./pages/FirmwarePage";
 import { APIProvider } from "./contexts/APIProvider";

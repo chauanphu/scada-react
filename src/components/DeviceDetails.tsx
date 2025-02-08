@@ -4,6 +4,7 @@ import { DeviceStatus } from "../types/Cluster";
 import { useAPI } from "../contexts/APIProvider";
 import { useWebSocket } from "../contexts/WebsocketProvider";
 import { useToast } from "../contexts/ToastProvider";
+import Switch from "react-switch";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 
@@ -15,8 +16,8 @@ interface DeviceDetailsProps {
 export const DeviceDetails = ({ device, deviceStatus }: DeviceDetailsProps) => {
   const apiContext = useAPI();
   const wsContext = useWebSocket();
-  const [loading, setLoading] = useState(false);
   const { addToast } = useToast();
+  const [loading, setLoading] = useState(false);
 
   const [hourOn, setHourOn] = useState(deviceStatus?.hour_on || 0);
   const [minuteOn, setMinuteOn] = useState(deviceStatus?.minute_on || 0);
@@ -29,6 +30,7 @@ export const DeviceDetails = ({ device, deviceStatus }: DeviceDetailsProps) => {
     if (!deviceStatus) return;
     setLoading(true);
     try {
+      // Toggle the device state by sending the opposite of the current state
       await apiContext.toggleDevice(device._id, !deviceStatus.toggle);
       addToast("success", `Đã ${deviceStatus.toggle ? "tắt" : "bật"} thiết bị`);
     } catch (err) {
@@ -75,7 +77,7 @@ export const DeviceDetails = ({ device, deviceStatus }: DeviceDetailsProps) => {
 
   return (
     <div className="p-4 space-y-4">
-      {/* Device Name and Status */}
+      {/* Header: Device Name and Connection Status */}
       <div className="flex items-center gap-2">
         <div
           className={`h-3 w-3 rounded-full ${
@@ -85,125 +87,132 @@ export const DeviceDetails = ({ device, deviceStatus }: DeviceDetailsProps) => {
         <span className="text-sm text-gray-600">
           {deviceStatus?.is_connected ? "Đã kết nối" : "Mất kết nối"}
         </span>
-        <h3 className="text-lg font-semibold">{deviceStatus?.device_name || device.name}</h3>
+        <h3 className="text-lg font-semibold">
+          {deviceStatus?.device_name || device.name}
+        </h3>
       </div>
 
-      {/* Main Layout: Control Panel and Real-Time Indicators */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Left Half: Control Panel */}
-        <div className="space-y-4">
-          {/* Toggle Power Button */}
-          <div className="flex flex-col gap-2">
-            <Button
-              variant={deviceStatus?.toggle ? "destructive" : "default"}
-              onClick={handleTogglePower}
-              disabled={loading || !deviceStatus?.is_connected}
-              className="w-full"
-            >
-              {deviceStatus?.toggle ? "Tắt" : "Bật"}
-            </Button>
-          </div>
-
-          {/* Mode Selection */}
-          <div className="flex flex-col gap-2">
-            <h3 className="text-sm font-medium text-gray-700">Chế độ</h3>
-            <div className="flex gap-2">
-              <Button
-                variant={deviceStatus?.auto ? "outline" : "default"}
-                onClick={() => handleToggleAuto()}
-                disabled={loading || !deviceStatus?.is_connected}
-                className="w-full"
-              >
-                Thủ công
-              </Button>
-              <Button
-                variant={deviceStatus?.auto ? "default" : "outline"}
-                onClick={() => handleToggleAuto()}
-                disabled={loading || !deviceStatus?.is_connected}
-                className="w-full"
-              >
-                Tự động
-              </Button>
-            </div>
-          </div>
-
-          {/* Schedule Section */}
-          <div className="flex flex-col gap-2">
-            <h3 className="text-sm font-medium text-gray-700">Lịch trình</h3>
-            <div className="grid grid-cols-2 gap-2">
-              <Input
-                type="number"
-                placeholder="Giờ bật"
-                value={hourOn}
-                onChange={(e) => setHourOn(Number(e.target.value))}
-                min={0}
-                max={23}
-              />
-              <Input
-                type="number"
-                placeholder="Phút bật"
-                value={minuteOn}
-                onChange={(e) => setMinuteOn(Number(e.target.value))}
-                min={0}
-                max={59}
-              />
-              <Input
-                type="number"
-                placeholder="Giờ tắt"
-                value={hourOff}
-                onChange={(e) => setHourOff(Number(e.target.value))}
-                min={0}
-                max={23}
-              />
-              <Input
-                type="number"
-                placeholder="Phút tắt"
-                value={minuteOff}
-                onChange={(e) => setMinuteOff(Number(e.target.value))}
-                min={0}
-                max={59}
-              />
-            </div>
-            <Button
-              variant="default"
-              onClick={handleSetSchedule}
-              disabled={loading || !deviceStatus?.is_connected}
-              className="w-full"
-            >
-              Cài đặt lịch hoạt động
-            </Button>
-          </div>
+      {/* Control Panel: Stacked Layout */}
+      <div className="space-y-4">
+        {/* Toggle Power Switch */}
+        <div className="flex items-center justify-between">
+          <Switch
+            checked={deviceStatus?.toggle || false}
+            onChange={handleTogglePower}
+            disabled={loading || !deviceStatus?.is_connected}
+            onColor="#4ade80"  // green when "on"
+            offColor="#f87171" // red when "off"
+            uncheckedIcon={
+              <div className="flex items-center justify-center h-full text-white text-xs px-1">
+          Bật
+              </div>
+            }
+            checkedIcon={
+              <div className="flex items-center justify-center h-full text-white text-xs px-1">
+          Tắt
+              </div>
+            }
+            height={32}  // increased height
+            width={64}   // increased width
+          />
         </div>
 
-        {/* Right Half: Real-Time Indicators */}
-        <div className="space-y-4">
-          {/* Power Information */}
-          {deviceStatus && (
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <p className="text-sm text-gray-600">Công suất</p>
-                <p className="font-medium">{deviceStatus.power}W</p>
-              </div>
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <p className="text-sm text-gray-600">Dòng điện</p>
-                <p className="font-medium">{deviceStatus.current}A</p>
-              </div>
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <p className="text-sm text-gray-600">Điện áp</p>
-                <p className="font-medium">{deviceStatus.voltage}V</p>
-              </div>
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <p className="text-sm text-gray-600">Hệ số công suất</p>
-                <p className="font-medium">{deviceStatus.power_factor}</p>
-              </div>
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <p className="text-sm text-gray-600">Tổng năng lượng</p>
-                <p className="font-medium">{deviceStatus.total_energy.toFixed(4)}kWh</p>
-              </div>
-            </div>
-          )}
+        {/* Mode Selection */}
+        <div className="flex flex-col gap-2">
+          <h3 className="text-sm font-medium text-gray-700">Chế độ</h3>
+          <Button
+            variant={deviceStatus?.auto ? "outline" : "default"}
+            onClick={handleToggleAuto}
+            disabled={loading || !deviceStatus?.is_connected}
+            className="w-full"
+          >
+            Thủ công
+          </Button>
+          <Button
+            variant={deviceStatus?.auto ? "default" : "outline"}
+            onClick={handleToggleAuto}
+            disabled={loading || !deviceStatus?.is_connected}
+            className="w-full"
+          >
+            Tự động
+          </Button>
+        </div>
+
+        {/* Schedule Section */}
+        <div className="space-y-2">
+          <h3 className="text-sm font-medium text-gray-700">Lịch trình</h3>
+          <div className="grid grid-cols-2 gap-2">
+            <Input
+              type="number"
+              placeholder="Giờ bật"
+              value={hourOn}
+              onChange={(e) => setHourOn(Number(e.target.value))}
+              min={0}
+              max={23}
+            />
+            <Input
+              type="number"
+              placeholder="Phút bật"
+              value={minuteOn}
+              onChange={(e) => setMinuteOn(Number(e.target.value))}
+              min={0}
+              max={59}
+            />
+            <Input
+              type="number"
+              placeholder="Giờ tắt"
+              value={hourOff}
+              onChange={(e) => setHourOff(Number(e.target.value))}
+              min={0}
+              max={23}
+            />
+            <Input
+              type="number"
+              placeholder="Phút tắt"
+              value={minuteOff}
+              onChange={(e) => setMinuteOff(Number(e.target.value))}
+              min={0}
+              max={59}
+            />
+          </div>
+          <Button
+            variant="default"
+            onClick={handleSetSchedule}
+            disabled={loading || !deviceStatus?.is_connected}
+            className="w-full"
+          >
+            Cài đặt lịch hoạt động
+          </Button>
         </div>
       </div>
+
+      {/* Real-Time Indicators (single column for a narrow sidebar) */}
+      {deviceStatus && (
+        <div className="space-y-4">
+          <div className="bg-gray-50 p-3 rounded-lg">
+            <p className="text-sm text-gray-600">Công suất</p>
+            <p className="font-medium">{deviceStatus.power}W</p>
+          </div>
+          <div className="bg-gray-50 p-3 rounded-lg">
+            <p className="text-sm text-gray-600">Dòng điện</p>
+            <p className="font-medium">{deviceStatus.current}A</p>
+          </div>
+          <div className="bg-gray-50 p-3 rounded-lg">
+            <p className="text-sm text-gray-600">Điện áp</p>
+            <p className="font-medium">{deviceStatus.voltage}V</p>
+          </div>
+          <div className="bg-gray-50 p-3 rounded-lg">
+            <p className="text-sm text-gray-600">Hệ số công suất</p>
+            <p className="font-medium">{deviceStatus.power_factor}</p>
+          </div>
+          <div className="bg-gray-50 p-3 rounded-lg">
+            <p className="text-sm text-gray-600">Tổng năng lượng</p>
+            <p className="font-medium">
+              {deviceStatus.total_energy.toFixed(4)} kWh
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

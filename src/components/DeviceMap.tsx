@@ -72,12 +72,6 @@ export const DeviceMap = ({
   const wsContext = useWebSocket();
   const deviceStatuses: Record<string, DeviceStatus> = wsContext?.deviceStatuses || {};
 
-  // console.log('Hiển thị bản đồ thiết bị:', {
-  //   devices,
-  //   selectedDevice,
-  //   deviceStatuses
-  // });
-
   const createIcon = (status: boolean, power: boolean, name: string) => {
     const iconUrl = status ? (power ? iconOn : iconOff) : iconDisable;
     
@@ -137,10 +131,6 @@ export const DeviceMap = ({
           <MapController devices={devices} selectedDevice={selectedDevice} />
           {validDevices.map((device) => {
             const status = deviceStatuses[device._id];
-            // console.log(`Tạo điểm đánh dấu cho thiết bị ${device._id}:`, {
-            //   device,
-            //   status
-            // });
 
             const icon = createIcon(
               status?.is_connected || false,
