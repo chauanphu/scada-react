@@ -54,7 +54,7 @@ export const HomePage = () => {
   };
 
   return (
-    <div className="h-[calc(100vh-6rem)] -mt-8 -mx-4 pt-6">
+    <div className="h-[calc(100vh-6rem)] -mt-8 -mx-8 md:-mx-12 lg:-mx-24 xl:-mx-32 pt-6">
       {/* ===================== Desktop / Laptop Layout (3 columns) ===================== */}
       <div className="hidden md:grid grid-cols-6 gap-4 h-full">
         {/* Left Column: Device List (smaller; ~1/6 width) */}
@@ -113,7 +113,7 @@ export const HomePage = () => {
 
         {/* Right Column: Device Details (redesigned to fit narrow sidebar; ~1/6 width) */}
         <div className="col-span-1 bg-white shadow-lg rounded-lg p-4 overflow-y-auto">
-          {selectedDevice ? (
+        {selectedDevice ? (
             <DeviceDetails
               device={selectedDevice}
               deviceStatus={wsContext.deviceStatuses[selectedDevice._id]}

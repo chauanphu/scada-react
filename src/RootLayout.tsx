@@ -27,8 +27,8 @@ const RootLayout = () => {
   return (
     <div className="min-h-screen bg-gray-100">
       <Navbar />
-      <main className="container mx-auto px-4 py-8">
-        <Outlet />
+      <main className={`${location.pathname === '/' ? 'px-4 mx-5' : 'container mx-auto px-4'} py-8`}>
+      <Outlet />
       </main>
     </div>
   );

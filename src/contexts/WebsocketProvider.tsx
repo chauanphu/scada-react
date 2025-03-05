@@ -68,13 +68,13 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
         deviceStatus.latitude !== undefined &&
         deviceStatus.longitude !== undefined &&
         (deviceStatus.latitude !== currentDevice.latitude ||
-         deviceStatus.longitude !== currentDevice.longitude)
+          deviceStatus.longitude !== currentDevice.longitude)
       ) {
         // console.log(`Updating coordinates for device ${currentDevice._id}:`, {
         //   lat: deviceStatus.latitude,
         //   lng: deviceStatus.longitude
         // });
-        
+
         updatedDevices[index] = {
           ...currentDevice,
           latitude: deviceStatus.latitude,
@@ -83,19 +83,19 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
         };
         return updatedDevices;
       }
-      
+
       return prev;
     });
   }, []);
 
   const fetchDevices = useCallback(async () => {
     if (!apiContext?.token) return;
-    
+
     try {
       const data = await apiContext.getDevices();
       setDevices(data);
     } catch (err) {
-       
+
       console.error('Error fetching devices:', err);
       addToast('error', 'Could not load devices');
     }
@@ -108,7 +108,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
 
     const wsUrl = `${PUBLIC_WS_URL}/api/ws/monitor/?token=${apiContext.token}`;
     // console.log('Connecting to WebSocket:', wsUrl);
-    
+
     const ws = new WebSocket(wsUrl);
     wsRef.current = ws;
 
@@ -129,9 +129,9 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
       if (!reconnectTimeoutRef.current && selectedDevice && connectionAttemptsRef.current < maxReconnectAttempts) {
         connectionAttemptsRef.current++;
         const delay = Math.min(1000 * Math.pow(2, connectionAttemptsRef.current), 30000);
-        
+
         // console.log(`Reconnect attempt ${connectionAttemptsRef.current} in ${delay}ms`);
-        
+
         reconnectTimeoutRef.current = setTimeout(() => {
           reconnectTimeoutRef.current = undefined;
           connectWebSocket();
@@ -160,7 +160,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
           handleDeviceStatus(deviceStatus);
         }
       } catch (err) {
-         
+
         console.error('Error processing WebSocket message:', err);
       }
     };
@@ -182,14 +182,20 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
   // Initialize WebSocket when authenticated
   useEffect(() => {
     if (apiContext?.isAuthenticated) {
-      // console.log('Authenticated, initializing WebSocket...');
       fetchDevices();
       connectWebSocket();
     }
+
+    // Only disconnect when the component truly unmounts,
+    // not when internal state or props change
     return () => {
-      disconnectWebSocket();
+      // Only disconnect when the provider itself is unmounting
+      // Not when dependencies change during tab navigation
+      if (!apiContext?.isAuthenticated) {
+        disconnectWebSocket();
+      }
     };
-  }, [apiContext?.isAuthenticated, fetchDevices, connectWebSocket, disconnectWebSocket]);
+  }, [apiContext?.isAuthenticated]);  // Remove other dependencies
 
   // Reconnect when a device is selected
   useEffect(() => {
