@@ -34,7 +34,10 @@ export const DeviceList: React.FC<DeviceListProps> = ({
             Không tìm thấy thiết bị nào
           </div>
         ) : (
-          devices.map((device) => {
+          devices
+            .slice()
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .map((device) => {
             const status = deviceStatuses[device._id];
 
             return (

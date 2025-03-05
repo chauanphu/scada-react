@@ -407,48 +407,51 @@ export const DevicesPage: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
-                    {devices.map((device) => (
-                      <tr key={device.mac}>
-                        <td className="px-4 py-4">
-                          <div className="font-medium">{device.name}</div>
-                          <div className="text-sm text-gray-500 md:hidden">
+                    {devices
+                      .slice()
+                      .sort((a, b) => a.name.localeCompare(b.name))
+                      .map((device) => (
+                        <tr key={device.mac}>
+                          <td className="px-4 py-4">
+                            <div className="font-medium">{device.name}</div>
+                            <div className="text-sm text-gray-500 md:hidden">
+                              {device.mac}
+                            </div>
+                          </td>
+                          <td className="px-4 py-4 hidden md:table-cell">
                             {device.mac}
-                          </div>
-                        </td>
-                        <td className="px-4 py-4 hidden md:table-cell">
-                          {device.mac}
-                        </td>
-                        <td className="px-4 py-4">
-                          {tenants.find(
-                            (tenant) => tenant._id === device.tenant_id
-                          )?.name || "N/A"}
-                        </td>
-                        <td className="px-4 py-4 flex gap-2">
-                          <button
-                            onClick={() => handleEditDevice(device)}
-                            className="text-blue-600 hover:text-blue-900 flex items-center"
-                            disabled={loading}
-                          >
-                            {loading ? (
-                              <div className="h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                            ) : (
-                              "Chỉnh sửa"
-                            )}
-                          </button>
-                          <button
-                            onClick={() => handleDeleteDevice(device._id)}
-                            className="text-red-600 hover:text-red-900 flex items-center"
-                            disabled={loading}
-                          >
-                            {loading ? (
-                              <div className="h-4 w-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></div>
-                            ) : (
-                              "Xóa"
-                            )}
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
+                          </td>
+                          <td className="px-4 py-4">
+                            {tenants.find(
+                              (tenant) => tenant._id === device.tenant_id
+                            )?.name || "N/A"}
+                          </td>
+                          <td className="px-4 py-4 flex gap-2">
+                            <button
+                              onClick={() => handleEditDevice(device)}
+                              className="text-blue-600 hover:text-blue-900 flex items-center"
+                              disabled={loading}
+                            >
+                              {loading ? (
+                                <div className="h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                              ) : (
+                                "Chỉnh sửa"
+                              )}
+                            </button>
+                            <button
+                              onClick={() => handleDeleteDevice(device._id)}
+                              className="text-red-600 hover:text-red-900 flex items-center"
+                              disabled={loading}
+                            >
+                              {loading ? (
+                                <div className="h-4 w-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></div>
+                              ) : (
+                                "Xóa"
+                              )}
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
                   </tbody>
                 </table>
               </div>
