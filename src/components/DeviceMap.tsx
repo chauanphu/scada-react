@@ -16,43 +16,48 @@ interface DeviceMapProps {
 
 const MapController = ({
   devices,
-  selectedDevice
+  selectedDevice,
 }: {
   devices: Device[];
   selectedDevice: Device | null;
 }) => {
   const map = useMap();
-  
+
+  // On component mount, set initial bounds once
+  useEffect(() => {
+    if (!selectedDevice) {
+      const validDevices = devices.filter((d) => d.latitude && d.longitude);
+      if (validDevices.length > 0) {
+        const lats = validDevices.map((d) => d.latitude!);
+        const lngs = validDevices.map((d) => d.longitude!);
+        const bounds: LatLngBoundsLiteral = [
+          [Math.min(...lats), Math.min(...lngs)],
+          [Math.max(...lats), Math.max(...lngs)],
+        ];
+        map.fitBounds(bounds, {
+          padding: [50, 50],
+          animate: true,
+          duration: 1,
+          maxZoom: 16,
+        });
+      } else {
+        map.setView([21.0285, 105.8542], 13);
+      }
+    }
+    // Run only once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map]);
+
+  // Update view only when a device is selected
   useEffect(() => {
     if (selectedDevice?.latitude && selectedDevice?.longitude) {
-      // console.log('Đang phóng to đến thiết bị được chọn:', selectedDevice);
       map.setView(
         [selectedDevice.latitude, selectedDevice.longitude],
         18,
         { animate: true, duration: 1 }
       );
-    } else {
-      const validDevices = devices.filter(d => d.latitude && d.longitude);
-      if (validDevices.length > 0) {
-        // console.log('Đang điều chỉnh bản đồ cho tất cả thiết bị:', validDevices);
-        const lats = validDevices.map(d => d.latitude!);
-        const lngs = validDevices.map(d => d.longitude!);
-        const bounds: LatLngBoundsLiteral = [
-          [Math.min(...lats), Math.min(...lngs)],
-          [Math.max(...lats), Math.max(...lngs)]
-        ];
-        map.fitBounds(bounds, { 
-          padding: [50, 50],
-          animate: true,
-          duration: 1,
-          maxZoom: 16
-        });
-      } else {
-        // Chế độ xem mặc định cho Việt Nam
-        map.setView([21.0285, 105.8542], 13);
-      }
     }
-  }, [map, selectedDevice, devices]);
+  }, [map, selectedDevice]);
 
   return null;
 };
@@ -70,11 +75,12 @@ export const DeviceMap = ({
   onDeviceSelect,
 }: DeviceMapProps) => {
   const wsContext = useWebSocket();
-  const deviceStatuses: Record<string, DeviceStatus> = wsContext?.deviceStatuses || {};
+  const deviceStatuses: Record<string, DeviceStatus> =
+    wsContext?.deviceStatuses || {};
 
   const createIcon = (status: boolean, power: boolean, name: string) => {
     const iconUrl = status ? (power ? iconOn : iconOff) : iconDisable;
-    
+
     return L.divIcon({
       html: `
         <div style="display:flex;align-items:center;justify-content:center;text-align:center;transform:translateY(-50%)">
@@ -99,18 +105,18 @@ export const DeviceMap = ({
       return [selectedDevice.latitude, selectedDevice.longitude];
     }
 
-    const validDevices = devices.filter(d => d.latitude && d.longitude);
+    const validDevices = devices.filter((d) => d.latitude && d.longitude);
     if (validDevices.length === 0) return [21.0285, 105.8542];
 
-    const lats = validDevices.map(d => d.latitude!);
-    const lngs = validDevices.map(d => d.longitude!);
+    const lats = validDevices.map((d) => d.latitude!);
+    const lngs = validDevices.map((d) => d.longitude!);
     return [
       (Math.min(...lats) + Math.max(...lats)) / 2,
-      (Math.min(...lngs) + Math.max(...lngs)) / 2
+      (Math.min(...lngs) + Math.max(...lngs)) / 2,
     ];
   };
 
-  const validDevices = devices.filter(d => d.latitude && d.longitude);
+  const validDevices = devices.filter((d) => d.latitude && d.longitude);
   // console.log('Thiết bị có tọa độ hợp lệ:', validDevices);
 
   return (
@@ -146,8 +152,7 @@ export const DeviceMap = ({
                 eventHandlers={{
                   click: () => onDeviceSelect(device),
                 }}
-              >
-              </Marker>
+              ></Marker>
             );
           })}
         </MapContainer>
