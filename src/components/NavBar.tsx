@@ -53,6 +53,11 @@ export const Navbar = () => {
       permission: "/audit",
     },
     {
+      name: "Cảnh báo",
+      href: "/alerts",
+      permission: "/alerts",
+    },
+    {
       name: "Cập nhật firmware",
       href: "/firmware",
       permission: "/firmware",

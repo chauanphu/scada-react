@@ -6,6 +6,7 @@ import { DevicesPage } from "./pages/DevicesPage";
 import { UsersPage } from "./pages/UsersPage";
 import { AuditPage } from "./pages/AuditPage";
 import { FirmwarePage } from "./pages/FirmwarePage";
+import { AlertPage } from "./pages/AlertPage";
 import { APIProvider } from "./contexts/APIProvider";
 import { WebSocketProvider } from "./contexts/WebsocketProvider";
 import { ToastProvider } from "./contexts/ToastProvider";
@@ -27,6 +28,7 @@ function App() {
                 {/* <Route path="roles" element={<RolesPage />} /> */}
                 <Route path="audit" element={<AuditPage />} />
                 <Route path="firmware" element={<FirmwarePage />} />
+                <Route path="alerts" element={<AlertPage />} />
               </Route>
             </Routes>
           </WebSocketProvider>

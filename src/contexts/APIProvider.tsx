@@ -50,9 +50,9 @@ const ROLE_PERMISSIONS = {
     "/audit",
     "/firmware",
   ],
-  [UserRole.ADMIN]: ["/", "/devices", "/users", "/audit"],
+  [UserRole.ADMIN]: ["/", "/devices", "/users", "/audit", "/alerts"],
   [UserRole.OPERATOR]: ["/", "/devices"],
-  [UserRole.MONITOR]: ["/"],
+  [UserRole.MONITOR]: ["/", "/audit", "/alerts"],
 };
 
 interface APIContextType {

@@ -767,3 +767,53 @@ export async function updateRole(
 
   return response.json();
 }
+
+// Alert interface matching the API response
+export interface Alert {
+  _id: string;
+  device_name: string;
+  state: string;
+  severity: string;
+  timestamp: string;
+  resolve_by?: string;
+  resolved_time?: string;
+}
+
+export type PaginatedAlerts = {
+  total: number;
+  page: number;
+  page_size: number;
+  items: Alert[];
+};
+
+// Get alert logs
+export async function getAlerts(
+  token: string,
+  page: number = 1,
+  page_size: number = 10
+): Promise<PaginatedAlerts> {
+  try {
+    const response = await fetch(
+      `${PUBLIC_API_URL}/alert/?page=${page}&page_size=${page_size}`,
+      {
+        method: "GET",
+        headers: {
+          accept: "application/json",
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      const error = new Error("Không thể tải thông báo cảnh báo");
+      error.name = "EmptyResponseError";
+      throw error;
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error("Error fetching alerts:", error);
+    throw error;
+  }
+}
