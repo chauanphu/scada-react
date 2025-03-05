@@ -104,7 +104,7 @@ export const AuditPage = (): JSX.Element => {
                             {log.resource}
                           </td>
                           <td className="px-4 py-4 text-sm text-gray-500">
-                            {log.details || "N/A"}
+                            {log.detail || "N/A"}
                           </td>
                         </tr>
                       ))

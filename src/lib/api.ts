@@ -425,7 +425,7 @@ export interface AuditLog {
   resource: string;
   timestamp: string;
   role: string;
-  details?: string;
+  detail?: string;
 }
 
 export type PaginatedAuditLogs = {
