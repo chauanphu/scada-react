@@ -54,8 +54,8 @@ export const DevicesPage: React.FC = () => {
       const data = await getTenants(token);
       setTenants(data);
     } catch (err) {
-      console.error(err);
-      setError("Lỗi khi tải danh sách khách hàng.");
+      console.error("Không có quyền truy cập danh sách khách hàng");
+      // setError("Lỗi khi tải danh sách khách hàng.");
     }
   }, [token]);
 
