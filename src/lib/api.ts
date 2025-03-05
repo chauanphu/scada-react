@@ -7,7 +7,7 @@ import { Task } from "../types/Task";
 
 // Ensure environment variables are properly loaded
 export const PUBLIC_API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
-export const PUBLIC_WS_URL = import.meta.env.VITE_WS_URL || "ws://localhost:8000/api/ws";
+export const PUBLIC_WS_URL = import.meta.env.VITE_WS_URL || "ws://localhost:8000";
 
 export enum UserRole {
   SUPERADMIN = "superadmin",

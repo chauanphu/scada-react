@@ -87,9 +87,6 @@ export const DeviceDetails = ({ device, deviceStatus }: DeviceDetailsProps) => {
         <span className="text-sm text-gray-600">
           {deviceStatus?.is_connected ? "Đã kết nối" : "Mất kết nối"}
         </span>
-        <h3 className="text-lg font-semibold">
-          {deviceStatus?.device_name || device.name}
-        </h3>
       </div>
 
       {/* Control Panel: Stacked Layout */}
