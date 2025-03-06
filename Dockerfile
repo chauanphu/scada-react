@@ -1,27 +1,29 @@
-FROM node:20.16-alpine as builder
+# Stage 1: Build with Bun
+FROM oven/bun:latest as builder
 
 ARG VITE_API_URL
 ARG VITE_WS_URL
 
+# Pass through environment variables
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 ENV VITE_API_KEY=$VITE_API_KEY
 
 WORKDIR /app
 
+# Copy package files and install dependencies using Bun
+# (Bun uses a bun.lockb file instead of package-lock.json)
+COPY package.json bun.lockb ./
+RUN bun install
 
-# Copy package files and install dependencies
-COPY package.json package-lock.json ./
-RUN npm ci
-
-# Copy source files and environment variables
+# Copy all source files and append environment variables for production
 COPY . .
 RUN echo "VITE_API_URL=${VITE_API_URL}" >> .env.production
 RUN echo "VITE_WS_URL=${VITE_WS_URL}" >> .env.production
 
-# Build the application
-RUN npm run build
+# Build the application using Bun
+RUN bun run build
 
-# Stage 2: Serve using nginx
+## Stage 2: Serve using nginx
 FROM nginx:alpine
 
 # Copy built assets from builder

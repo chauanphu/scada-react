@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   app:
-    image: scada_fe:2.0.1-beta
+    image: scada_fe:v2.0.7
     build:
       context: .
       dockerfile: ./Dockerfile
