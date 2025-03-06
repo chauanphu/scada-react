@@ -1,7 +1,7 @@
 export interface Device {
   _id: string;
   name: string;
-  mac: string;
+  mac?: string;
   tenant_id?: string;
   created_at?: string;
   updated_at?: string;
@@ -25,7 +25,7 @@ export interface DeviceStatus {
   power_factor: number;
   total_energy: number;
   toggle: boolean;
-  device_name: string;
+  device_name?: string;
   auto: boolean;
   hour_on: number;
   hour_off: number;
@@ -34,6 +34,8 @@ export interface DeviceStatus {
   latitude?: number;
   longitude?: number;
   tenant_id: string;
+  state?: string;
+  energy_meter?: number; // Add new field for energy meter data
 }
 
 export interface Schedule {

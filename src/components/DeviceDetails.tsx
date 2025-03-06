@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Device } from "../lib/api";
 import { DeviceStatus } from "../types/Cluster";
 import { useAPI } from "../contexts/APIProvider";
@@ -7,6 +7,7 @@ import { useToast } from "../contexts/ToastProvider";
 import Switch from "react-switch";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
+import { Badge } from "./ui/badge";
 
 interface DeviceDetailsProps {
   device: Device;
@@ -24,10 +25,23 @@ export const DeviceDetails = ({ device, deviceStatus }: DeviceDetailsProps) => {
   const [hourOff, setHourOff] = useState(deviceStatus?.hour_off || 0);
   const [minuteOff, setMinuteOff] = useState(deviceStatus?.minute_off || 0);
 
+  // Update state values when deviceStatus changes
+  useEffect(() => {
+    if (deviceStatus) {
+      setHourOn(deviceStatus.hour_on || 0);
+      setMinuteOn(deviceStatus.minute_on || 0);
+      setHourOff(deviceStatus.hour_off || 0);
+      setMinuteOff(deviceStatus.minute_off || 0);
+    }
+  }, [deviceStatus]);
+
   if (!apiContext || !wsContext) return null;
 
+  const isIdle = deviceStatus?.state === "";
+  const isConnected = deviceStatus?.is_connected;
+
   const handleTogglePower = async () => {
-    if (!deviceStatus) return;
+    if (!deviceStatus || isIdle) return;
     setLoading(true);
     try {
       // Toggle the device state by sending the opposite of the current state
@@ -42,7 +56,7 @@ export const DeviceDetails = ({ device, deviceStatus }: DeviceDetailsProps) => {
   };
 
   const handleToggleAuto = async () => {
-    if (!deviceStatus) return;
+    if (!deviceStatus || isIdle) return;
     setLoading(true);
     try {
       await apiContext.setDeviceAuto(device._id, !deviceStatus.auto);
@@ -56,7 +70,7 @@ export const DeviceDetails = ({ device, deviceStatus }: DeviceDetailsProps) => {
   };
 
   const handleSetSchedule = async () => {
-    if (!deviceStatus) return;
+    if (!deviceStatus || isIdle) return;
     setLoading(true);
     try {
       const newSchedule = {
@@ -75,18 +89,38 @@ export const DeviceDetails = ({ device, deviceStatus }: DeviceDetailsProps) => {
     }
   };
 
+  const getDeviceStateColor = () => {
+    if (!isConnected) return "bg-gray-500";
+    if (isIdle) return "bg-yellow-500";
+    if (deviceStatus?.state === "ON") return "bg-green-500";
+    return "bg-red-500";
+  };
+
+  const getDeviceStateText = () => {
+    if (!isConnected) return "Mất kết nối";
+    if (isIdle) return "Đang đồng bộ";
+    if (deviceStatus?.state === "ON") return "Đang bật";
+    if (deviceStatus?.state === "OFF") return "Đang tắt";
+    return deviceStatus?.state || "Không xác định";
+  };
+
   return (
     <div className="p-4 space-y-4">
       {/* Header: Device Name and Connection Status */}
-      <div className="flex items-center gap-2">
-        <div
-          className={`h-3 w-3 rounded-full ${
-            deviceStatus?.is_connected ? "bg-green-500" : "bg-red-500"
-          }`}
-        />
-        <span className="text-sm text-gray-600">
-          {deviceStatus?.is_connected ? "Đã kết nối" : "Mất kết nối"}
-        </span>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div
+            className={`h-3 w-3 rounded-full ${getDeviceStateColor()}`}
+          />
+          <span className="text-sm">
+            {getDeviceStateText()}
+          </span>
+        </div>
+        {isIdle && (
+          <Badge variant="outline" className="bg-yellow-50 text-yellow-800 border-yellow-300">
+            Đang đồng bộ
+          </Badge>
+        )}
       </div>
 
       {/* Control Panel: Stacked Layout */}
@@ -96,17 +130,17 @@ export const DeviceDetails = ({ device, deviceStatus }: DeviceDetailsProps) => {
           <Switch
             checked={deviceStatus?.toggle || false}
             onChange={handleTogglePower}
-            disabled={loading || !deviceStatus?.is_connected}
+            disabled={loading || !isConnected || isIdle}
             onColor="#4ade80"  // green when "on"
             offColor="#f87171" // red when "off"
             uncheckedIcon={
               <div className="flex items-center justify-center h-full text-white text-xs px-1">
-          Bật
+                Bật
               </div>
             }
             checkedIcon={
               <div className="flex items-center justify-center h-full text-white text-xs px-1">
-          Tắt
+                Tắt
               </div>
             }
             height={32}  // increased height
@@ -120,7 +154,7 @@ export const DeviceDetails = ({ device, deviceStatus }: DeviceDetailsProps) => {
           <Button
             variant={deviceStatus?.auto ? "outline" : "default"}
             onClick={handleToggleAuto}
-            disabled={loading || !deviceStatus?.is_connected}
+            disabled={loading || !isConnected || isIdle}
             className="w-full"
           >
             Thủ công
@@ -128,7 +162,7 @@ export const DeviceDetails = ({ device, deviceStatus }: DeviceDetailsProps) => {
           <Button
             variant={deviceStatus?.auto ? "default" : "outline"}
             onClick={handleToggleAuto}
-            disabled={loading || !deviceStatus?.is_connected}
+            disabled={loading || !isConnected || isIdle}
             className="w-full"
           >
             Tự động
@@ -146,6 +180,7 @@ export const DeviceDetails = ({ device, deviceStatus }: DeviceDetailsProps) => {
               onChange={(e) => setHourOn(Number(e.target.value))}
               min={0}
               max={23}
+              disabled={isIdle}
             />
             <Input
               type="number"
@@ -154,6 +189,7 @@ export const DeviceDetails = ({ device, deviceStatus }: DeviceDetailsProps) => {
               onChange={(e) => setMinuteOn(Number(e.target.value))}
               min={0}
               max={59}
+              disabled={isIdle}
             />
             <Input
               type="number"
@@ -162,6 +198,7 @@ export const DeviceDetails = ({ device, deviceStatus }: DeviceDetailsProps) => {
               onChange={(e) => setHourOff(Number(e.target.value))}
               min={0}
               max={23}
+              disabled={isIdle}
             />
             <Input
               type="number"
@@ -170,20 +207,26 @@ export const DeviceDetails = ({ device, deviceStatus }: DeviceDetailsProps) => {
               onChange={(e) => setMinuteOff(Number(e.target.value))}
               min={0}
               max={59}
+              disabled={isIdle}
             />
           </div>
           <Button
             variant="default"
             onClick={handleSetSchedule}
-            disabled={loading || !deviceStatus?.is_connected}
+            disabled={loading || !isConnected || isIdle}
             className="w-full"
           >
             Cài đặt lịch hoạt động
           </Button>
+          {isIdle && (
+            <p className="text-xs text-yellow-600 text-center mt-2">
+              Thiết bị đang đồng bộ. Vui lòng đợi để điều khiển.
+            </p>
+          )}
         </div>
       </div>
 
-      {/* Real-Time Indicators (single column for a narrow sidebar) */}
+      {/* Real-Time Indicators */}
       {deviceStatus && (
         <div className="space-y-4">
           <div className="bg-gray-50 p-3 rounded-lg">

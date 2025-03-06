@@ -1,5 +1,5 @@
 import React from "react";
-import { Device } from "../types/Cluster";
+import { Device, DeviceStatus } from "../types/Cluster";
 import { useWebSocket } from "../contexts/WebsocketProvider";
 import { Button } from "./ui/button";
 
@@ -26,6 +26,23 @@ export const DeviceList: React.FC<DeviceListProps> = ({
     if (target.closest("button")) return; // Don't select if clicking buttons
     onDeviceSelect(device);
   };
+
+  const getDeviceStatusText = (status: DeviceStatus) => {
+    if (!status?.is_connected) return "Đang lấy dữ liệu...";
+    if (status.state === "") return "Đang đồng bộ...";
+    if (status.state === "ON") return "Đang bật";
+    if (status.state === "OFF") return "Đang tắt";
+    return status.state || "Không xác định";
+  };
+
+  const getStatusColor = (status: DeviceStatus) => {
+    if (!status?.is_connected) return "text-gray-500";
+    if (status.state === "") return "text-yellow-500";
+    if (status.state === "ON") return "text-green-500";
+    if (status.state === "OFF") return "text-red-500";
+    return "text-gray-600";
+  };
+  
   return (
     <div className="h-full overflow-y-auto bg-white">
       <div className="space-y-2 p-4">
@@ -58,22 +75,16 @@ export const DeviceList: React.FC<DeviceListProps> = ({
                   </div>
                 </div>
                 <div className="mt-2 flex justify-between items-center">
-                  {
-                    status?.is_connected ? (
-                      <div className="flex items-center gap-2">
-                      <span className={`text-sm text-gray-600 ${status?.toggle ? "text-green-500" : "text-red-500"}`}>
-                        Trạng thái: {status?.toggle ? "Bật" : "Tắt"}
-                      </span>
+                  <div className="flex items-center gap-2">
+                    <span className={getStatusColor(status)}>
+                      {getDeviceStatusText(status)}
+                    </span>
+                    {status?.is_connected && status.state !== "" && (
                       <span className="text-sm text-gray-600">
                         {status.power !== undefined ? `${status.power} W` : "N/A"}
                       </span>
-                    </div>
-                    ) : (
-                      <div className="text-sm text-gray-500">
-                        Đang lấy dữ liệu...
-                      </div>
-                    )
-                  }
+                    )}
+                  </div>
                   {(onEditDevice || onDeleteDevice) && (
                     <div className="flex justify-end space-x-2">
                       {onEditDevice && (
