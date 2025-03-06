@@ -43,15 +43,16 @@ import Cookies from "js-cookie";
 const ROLE_PERMISSIONS = {
   [UserRole.SUPERADMIN]: [
     "/",
+    "/tenants",
     "/devices",
     "/users",
     "/roles",
     "/audit",
     "/firmware",
   ],
-  [UserRole.ADMIN]: ["/", "/devices", "/users", "/audit", "/firmware"],
-  [UserRole.OPERATOR]: ["/", "/devices", "/firmware"],
-  [UserRole.MONITOR]: ["/"],
+  [UserRole.ADMIN]: ["/", "/devices", "/users", "/audit", "/alerts"],
+  [UserRole.OPERATOR]: ["/", "/devices"],
+  [UserRole.MONITOR]: ["/", "/devices", "/audit", "/alerts"],
 };
 
 interface APIContextType {
@@ -62,11 +63,12 @@ interface APIContextType {
   permissions: string[];
   login: (username: string, password: string) => Promise<void>;
   logout: () => void;
+  validateToken: () => Promise<boolean>;
   hasPermission: (path: string) => boolean;
   getUsers: () => Promise<User[]>;
   createUser: (userData: Partial<User>) => Promise<User>;
-  updateUser: (userId: number, userData: Partial<User>) => Promise<User>;
-  deleteUser: (userId: number) => Promise<void | User>;
+  updateUser: (userId: string, userData: Partial<User>) => Promise<User>;
+  deleteUser: (userId: string) => Promise<void | User>;
   getDevices: () => Promise<Device[]>;
   createDevice: (deviceData: CreateDeviceData) => Promise<Device>;
   updateDevice: (
@@ -101,21 +103,28 @@ export function APIProvider({ children }: { children: ReactNode }) {
   const [permissions, setPermissions] = useState<string[]>([]);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const validateToken = async () => {
-      if (token) {
-        const isValid = await checkLogin(token);
-        setIsAuthenticated(isValid);
-        if (!isValid) {
-          Cookies.remove("token");
-          setToken(null);
-          setUserRole(null);
-          setTenantId(null);
-          setPermissions([]);
-        }
+  const validateToken = async (): Promise<boolean> => {
+    if (token) {
+      const isValid = await checkLogin(token);
+      setIsAuthenticated(isValid);
+      if (!isValid) {
+        Cookies.remove("token");
+        setToken(null);
+        setUserRole(null);
+        setTenantId(null);
+        setPermissions([]);
       }
-    };
+      return isValid;
+    }
+    return false;
+  };
+
+  useEffect(() => {
     validateToken();
+    // Set userRole from cookies
+    const role = Cookies.get("userRole") as UserRole;
+    setUserRole(role);
+    setPermissions(ROLE_PERMISSIONS[role] || []);
   }, [token]);
 
   const login = async (username: string, password: string) => {
@@ -127,16 +136,18 @@ export function APIProvider({ children }: { children: ReactNode }) {
     setTenantId(tenant_id || null);
     setPermissions(ROLE_PERMISSIONS[role] || []);
     setIsAuthenticated(true);
-
     // Set cookie with token
     Cookies.set("token", access_token);
-
+    Cookies.set("userRole", role); // ✅ Store userRole in cookies
+    Cookies.set("tenantId", tenant_id || ""); // ✅ Store tenantId in cookies
     // Navigate to home page
     navigate("/");
   };
 
   const logout = () => {
     Cookies.remove("token");
+    Cookies.remove("userRole");
+    Cookies.remove("tenantId");
     setToken(null);
     setIsAuthenticated(false);
     setUserRole(null);
@@ -158,12 +169,13 @@ export function APIProvider({ children }: { children: ReactNode }) {
     permissions,
     login,
     logout,
+    validateToken,
     hasPermission,
     getUsers: () => getUsers(token || ""),
     createUser: (userData: Partial<User>) => createUser(token || "", userData),
-    updateUser: (userId: number, userData: Partial<User>) =>
+    updateUser: (userId: string, userData: Partial<User>) =>
       updateUser(token || "", userId, userData),
-    deleteUser: (userId: number) => deleteUser(token || "", userId),
+    deleteUser: (userId: string) => deleteUser(token || "", userId),
     getDevices: () => getDevices(token || ""),
     createDevice: (deviceData: CreateDeviceData) =>
       createDevice(token || "", deviceData),

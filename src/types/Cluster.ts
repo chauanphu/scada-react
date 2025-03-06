@@ -1,14 +1,17 @@
 export interface Device {
   _id: string;
   name: string;
-  mac: string;
+  mac?: string;
   tenant_id?: string;
   created_at?: string;
   updated_at?: string;
   latitude?: number;
   longitude?: number;
   auto?: boolean;
-  schedule?: Schedule;
+  hour_on?: number;
+  hour_off?: number;
+  minute_on?: number;
+  minute_off?: number;
 }
 
 export interface DeviceStatus {
@@ -22,7 +25,7 @@ export interface DeviceStatus {
   power_factor: number;
   total_energy: number;
   toggle: boolean;
-  device_name: string;
+  device_name?: string;
   auto: boolean;
   hour_on: number;
   hour_off: number;
@@ -31,7 +34,8 @@ export interface DeviceStatus {
   latitude?: number;
   longitude?: number;
   tenant_id: string;
-  schedule?: Schedule;
+  state?: string;
+  energy_meter?: number; // Add new field for energy meter data
 }
 
 export interface Schedule {
@@ -39,14 +43,26 @@ export interface Schedule {
   minute_on: number;
   hour_off: number;
   minute_off: number;
-  days: number[];
 }
 
 export interface CreateDeviceData {
   name: string;
+  mac?: string;
+  auto: boolean;
+  toggle: boolean;
+  hour_on?: number;
+  hour_off?: number;
+  minute_on?: number;
+  minute_off?: number;
+  tenant_id?: string;
+}
+
+export interface EditDeviceData {
+  name: string;
   mac: string;
-  latitude?: number;
-  longitude?: number;
-  auto?: boolean;
-  schedule?: Schedule;
-} 
+  hour_on?: number;
+  hour_off?: number;
+  minute_on?: number;
+  minute_off?: number;
+  tenant_id?: string;
+}

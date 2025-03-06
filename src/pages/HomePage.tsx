@@ -1,19 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useWebSocket } from "../contexts/WebsocketProvider";
-import { useAPI } from "../contexts/APIProvider";
-import { Permissions } from "../lib/api";
 import { Device } from "../types/Cluster";
 import { DeviceList } from "../components/DeviceList";
 import { DeviceMap } from "../components/DeviceMap";
 import { DeviceDetails } from "../components/DeviceDetails";
-import { useToast } from "../contexts/ToastProvider";
-import { UserRole, NEXT_PUBLIC_API_URL } from "../lib/api";
-
-interface ReportData {
-  timestamp: string;
-  power: number;
-  energy: number;
-}
+import { Button } from "../components/ui/button";
+import { ReportView } from "../components/ReportView";
 
 class ErrorBoundary extends React.Component<
   { children: React.ReactNode },
@@ -41,94 +33,67 @@ class ErrorBoundary extends React.Component<
 }
 
 export const HomePage = () => {
-  const apiContext = useAPI();
   const wsContext = useWebSocket();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
-  const { addToast } = useToast();
-  const [, setReportData] = useState<ReportData[] | null>(null);
   const [showDeviceList, setShowDeviceList] = useState(false);
-
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const fetchReportData = async () => {
-    if (!selectedDevice || !apiContext?.token) return;
-    
-    try {
-      const now = new Date();
-      const startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-      
-      const response = await fetch(
-        `${NEXT_PUBLIC_API_URL}/report/?device_id=${selectedDevice._id}&start_date=${startDate.toISOString()}&end_date=${now.toISOString()}&aggregation=hourly`,
-        {
-          headers: {
-            Authorization: `Bearer ${apiContext.token}`,
-          },
-        }
-      );
-
-      if (!response.ok) throw new Error('Không thể tải báo cáo');
-      
-      const data = await response.json();
-      setReportData(data);
-    } catch (err) {
-      console.error('Lỗi khi tải báo cáo:', err);
-      addToast('error', 'Không thể tải báo cáo thiết bị');
-    }
-  };
-
-  useEffect(() => {
-    if (selectedDevice) {
-      void fetchReportData();
-    }
-  }, [selectedDevice, fetchReportData]);
-
-  if (apiContext.userRole !== UserRole.SUPERADMIN) {
-    if (
-      !wsContext ||
-      !apiContext ||
-      !apiContext.hasPermission(Permissions.VIEW_DEVICES)
-    ) {
-      addToast("error", "Bạn không có quyền xem thiết bị");
-      return null;
-    }
-  }
+  const [activeView, setActiveView] = useState<"control" | "report">("control");
 
   if (!wsContext) return null;
 
   const { devices } = wsContext;
 
-  const filteredDevices = devices.filter((device) =>
-    device.name?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false
+  const filteredDevices = devices.filter(
+    (device) =>
+      device.name?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false
   );
 
   const handleDeviceSelect = (device: Device | null) => {
     setSelectedDevice(device);
+    setActiveView("control");
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-8rem)] -mt-8 -mx-4 pt-6">
-      <div className="flex flex-1 overflow-hidden">
-        <div className="w-1/4 overflow-y-hidden rounded-lg translate-y-7 hidden md:block">
-          <div className="p-4 pt-8 bg-white shadow-lg rounded-lg">
-            <input
-              type="text"
-              placeholder="Tìm kiếm thiết bị..."
-              className="w-full p-2 mb-4 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-            <div className="overflow-y-scroll h-[68vh] max-h-[68vh] ">
-              <DeviceList
-                devices={filteredDevices}
-                onDeviceSelect={handleDeviceSelect}
-                selectedDevice={selectedDevice}
-              />
-            </div>
-          </div>
+    <div className="h-[calc(100vh-6rem)] -mt-8 -mx-8 md:-mx-12 lg:-mx-24 xl:-mx-32 pt-6">
+      {/* ===================== Desktop / Laptop Layout (3 columns) ===================== */}
+      <div className="hidden md:grid grid-cols-6 gap-4 h-full">
+        {/* Left Column: Device List (smaller; ~1/6 width) */}
+        <div className="col-span-1 bg-white shadow-lg rounded-lg p-4 overflow-y-auto">
+          <input
+            type="text"
+            placeholder="Tìm kiếm thiết bị..."
+            className="w-full p-2 mb-4 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+          <DeviceList
+            devices={filteredDevices}
+            onDeviceSelect={handleDeviceSelect}
+            selectedDevice={selectedDevice}
+          />
         </div>
-        <div className="flex-1 p-8 bg-gray-100 overflow-y-hidden">
-          <div className="h-1/2 mb-4">
-            <div className="h-full bg-white rounded-lg shadow-lg overflow-hidden">
+
+        {/* Center Column: Device Map / Report View (wider; ~2/3 width) */}
+        <div className="col-span-4 bg-gray-100 shadow-lg rounded-lg flex flex-col overflow-hidden">
+          {selectedDevice && (
+            <div className="p-4 bg-white flex gap-2">
+              <Button
+                variant={activeView === "control" ? "default" : "outline"}
+                onClick={() => setActiveView("control")}
+              >
+                Bảng điều khiển
+              </Button>
+              <Button
+                variant={activeView === "report" ? "default" : "outline"}
+                onClick={() => setActiveView("report")}
+                disabled={!selectedDevice}
+              >
+                Báo cáo tiêu thụ
+              </Button>
+            </div>
+          )}
+          <div className="flex-1 overflow-hidden">
+            {activeView === "control" ? (
               <ErrorBoundary>
                 <DeviceMap
                   devices={devices}
@@ -136,60 +101,158 @@ export const HomePage = () => {
                   selectedDevice={selectedDevice}
                 />
               </ErrorBoundary>
-            </div>
-          </div>
-          <div className="h-1/2">
-            <div className="h-full bg-white rounded-lg shadow-lg overflow-y-scroll">
-              {selectedDevice ? (
-                <DeviceDetails
-                  device={selectedDevice}
-                  deviceStatus={wsContext.deviceStatuses[selectedDevice._id]}
-                />
-              ) : (
-                <div className="flex items-center justify-center h-full text-gray-500">
-                  Chọn thiết bị để xem chi tiết
+            ) : (
+              selectedDevice && (
+                <div className="h-full overflow-hidden">
+                  <ReportView device={selectedDevice} />
                 </div>
-              )}
-            </div>
+              )
+            )}
           </div>
-          <div className="md:hidden absolute place-content-center pt-5 justify-self-center">
-            <div className=""></div>
-            <button
-              className="w-full p-2 bg-blue-500 text-white rounded self-center focus:outline-none focus:ring-2 focus:ring-blue-500"
-              onClick={() => setShowDeviceList(true)}
-            >
-              Tìm kiếm thiết bị
-            </button>
-          {showDeviceList && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center pt-[100%] z-50">
-              <div className="bg-white p-4 rounded-lg shadow-lg w-11/12 max-h-[80vh] overflow-y-scroll">
-                <button
-                  className="top-2 right-2 text-4xl text-gray-500"
-                  onClick={() => setShowDeviceList(false)}
-                >
-                  &times;
-                </button>
-                <input
-                  type="text"
-                  placeholder="Tìm kiếm thiết bị..."
-                  className="w-full p-2 mb-4 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-                <DeviceList
-                  devices={filteredDevices}
-                  onDeviceSelect={(device) => {
-                    handleDeviceSelect(device);
-                    setShowDeviceList(false);
-                  }}
-                  selectedDevice={selectedDevice}
-                />
-              </div>
+        </div>
+
+        {/* Right Column: Device Details (redesigned to fit narrow sidebar; ~1/6 width) */}
+        <div className="col-span-1 bg-white shadow-lg rounded-lg p-4 overflow-y-auto">
+        {selectedDevice ? (
+            <DeviceDetails
+              device={selectedDevice}
+              deviceStatus={wsContext.deviceStatuses[selectedDevice._id]}
+            />
+          ) : (
+            <div className="flex items-center justify-center h-full text-gray-500">
+              Chọn thiết bị để xem chi tiết
             </div>
           )}
         </div>
+      </div>
+
+      {/* ===================== Mobile Layout (Stacked / Single Column) ===================== */}
+      <div className="md:hidden flex flex-col h-full">
+        {/* Top Bar: Button to open the Device List modal */}
+        <div className="p-4 bg-white shadow-lg">
+          <button
+            className="w-full p-2 bg-blue-500 text-white rounded-lg shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            onClick={() => setShowDeviceList(true)}
+          >
+            Tìm kiếm thiết bị
+          </button>
+        </div>
+
+        {/* Main Content: Toggle Buttons and Map / Report View */}
+        <div className="flex-1 p-2">
+          {selectedDevice && (
+            <div className="mb-2 flex gap-2">
+              <Button
+                variant={activeView === "control" ? "default" : "outline"}
+                onClick={() => setActiveView("control")}
+              >
+                Bảng điều khiển
+              </Button>
+              <Button
+                variant={activeView === "report" ? "default" : "outline"}
+                onClick={() => setActiveView("report")}
+                disabled={!selectedDevice}
+              >
+                Báo cáo tiêu thụ
+              </Button>
+            </div>
+          )}
+          <div className="h-64 overflow-hidden bg-gray-100 shadow-lg rounded-lg">
+            {activeView === "control" ? (
+              <ErrorBoundary>
+                <DeviceMap
+                  devices={devices}
+                  onDeviceSelect={handleDeviceSelect}
+                  selectedDevice={selectedDevice}
+                />
+              </ErrorBoundary>
+            ) : (
+              selectedDevice && (
+                <div className="h-full overflow-hidden">
+                  <ReportView device={selectedDevice} />
+                </div>
+              )
+            )}
+          </div>
+        </div>
+
+        {/* Bottom Section: Device Details */}
+        <div className="p-4 bg-white shadow-lg">
+          {selectedDevice ? (
+            <DeviceDetails
+              device={selectedDevice}
+              deviceStatus={wsContext.deviceStatuses[selectedDevice._id]}
+            />
+          ) : (
+            <div className="flex items-center justify-center text-gray-500">
+              Chọn thiết bị để xem chi tiết
+            </div>
+          )}
         </div>
       </div>
+
+      {/* ===================== Mobile Device List Modal ===================== */}
+      {showDeviceList && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]"
+          onClick={() => setShowDeviceList(false)}
+        >
+          <div
+            className="bg-white p-4 rounded-lg shadow-lg w-11/12 max-h-[80vh] overflow-y-auto relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="sticky top-0 bg-white pb-4">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold">Chọn thiết bị</h2>
+                <button
+                  className="p-2 text-gray-500 hover:text-gray-700"
+                  onClick={() => setShowDeviceList(false)}
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-6 w-6"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
+              </div>
+              <input
+                type="text"
+                placeholder="Tìm kiếm thiết bị..."
+                className="w-full p-2 mb-4 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+
+            <DeviceList
+              devices={filteredDevices}
+              onDeviceSelect={(device) => {
+                handleDeviceSelect(device);
+                setShowDeviceList(false);
+              }}
+              selectedDevice={selectedDevice}
+            />
+
+            <div className="sticky bottom-0 bg-white pt-4 border-t">
+              <button
+                className="w-full p-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+                onClick={() => setShowDeviceList(false)}
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAPI } from "../contexts/APIProvider";
 import { Device, FirmwareMetadata } from "../lib/api";
 import { useToast } from "../hooks/use-toast";
@@ -17,35 +17,31 @@ export const FirmwarePage = () => {
   const [latestFirmware, setLatestFirmware] = useState<FirmwareMetadata | null>(null);
   const [updateType, setUpdateType] = useState<"selected" | "all">("selected");
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const fetchDevices = async () => {
+  const fetchDevices = useCallback(async () => {
     try {
       const fetchedDevices = await apiContext.getDevices();
       setDevices(fetchedDevices);
     } catch (error) {
-       
       toast({
         variant: "destructive",
         title: "Lỗi",
         description: "Không thể tải danh sách thiết bị" + error
       });
     }
-  };
+  }, [apiContext, toast]);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const fetchLatestFirmware = async () => {
+  const fetchLatestFirmware = useCallback(async () => {
     try {
       const firmware = await apiContext.getLatestFirmware();
       setLatestFirmware(firmware);
     } catch (error) {
-       
       toast({
         variant: "destructive",
         title: "Lỗi",
         description: "Không thể tải thông tin firmware hiện tại" + error
       });
     }
-  };
+  }, [apiContext, toast]);
 
   useEffect(() => {
     void fetchDevices();
@@ -98,7 +94,6 @@ export const FirmwarePage = () => {
       });
       void fetchLatestFirmware();
     } catch (error) {
-       
       toast({
         variant: "destructive",
         title: "Lỗi",
@@ -148,7 +143,6 @@ export const FirmwarePage = () => {
         });
       }
     } catch (error) {
-       
       toast({
         variant: "destructive",
         title: "Lỗi",
@@ -171,7 +165,7 @@ export const FirmwarePage = () => {
               <p>Phiên bản: {latestFirmware.version}</p>
               <p>
                 Ngày tải lên:{" "}
-                {new Date(latestFirmware.upload_date).toLocaleString()}
+                {new Date(latestFirmware.upload_time).toLocaleString()}
               </p>
             </div>
           ) : (

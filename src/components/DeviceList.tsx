@@ -1,5 +1,5 @@
 import React from "react";
-import { Device } from "../types/Cluster";
+import { Device, DeviceStatus } from "../types/Cluster";
 import { useWebSocket } from "../contexts/WebsocketProvider";
 import { Button } from "./ui/button";
 
@@ -21,18 +21,28 @@ export const DeviceList: React.FC<DeviceListProps> = ({
   const wsContext = useWebSocket();
   const deviceStatuses = wsContext?.deviceStatuses || {};
 
-  console.log('DeviceList render:', {
-    devices,
-    selectedDevice,
-    deviceStatuses
-  });
-
   const handleDeviceClick = (device: Device, e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
-    if (target.closest('button')) return; // Don't select if clicking buttons
+    if (target.closest("button")) return; // Don't select if clicking buttons
     onDeviceSelect(device);
   };
 
+  const getDeviceStatusText = (status: DeviceStatus) => {
+    if (!status?.is_connected) return "Đang lấy dữ liệu...";
+    if (status.state === "") return "Đang đồng bộ...";
+    if (status.state === "ON") return "Đang bật";
+    if (status.state === "OFF") return "Đang tắt";
+    return status.state || "Không xác định";
+  };
+
+  const getStatusColor = (status: DeviceStatus) => {
+    if (!status?.is_connected) return "text-gray-500";
+    if (status.state === "") return "text-yellow-500";
+    if (status.state === "ON") return "text-green-500";
+    if (status.state === "OFF") return "text-red-500";
+    return "text-gray-600";
+  };
+  
   return (
     <div className="h-full overflow-y-auto bg-white">
       <div className="space-y-2 p-4">
@@ -41,10 +51,12 @@ export const DeviceList: React.FC<DeviceListProps> = ({
             Không tìm thấy thiết bị nào
           </div>
         ) : (
-          devices.map((device) => {
+          devices
+            .slice()
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .map((device) => {
             const status = deviceStatuses[device._id];
-            console.log(`Device ${device._id} status:`, status);
-            
+
             return (
               <div
                 key={device._id}
@@ -60,74 +72,48 @@ export const DeviceList: React.FC<DeviceListProps> = ({
                     <h3 className="font-medium text-gray-900 text-lg break-words">
                       {status?.device_name || device.name}
                     </h3>
-                    <p className="text-sm text-gray-500 break-all">{device.mac}</p>
-                    {device.latitude && device.longitude && (
-                      <p className="text-xs text-gray-400">
-                        Vị trí: {device.latitude.toFixed(6)}, {device.longitude.toFixed(6)}
-                      </p>
+                  </div>
+                </div>
+                <div className="mt-2 flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <span className={getStatusColor(status)}>
+                      {getDeviceStatusText(status)}
+                    </span>
+                    {status?.is_connected && status.state !== "" && (
+                      <span className="text-sm text-gray-600">
+                        {status.power !== undefined ? `${status.power} W` : "N/A"}
+                      </span>
                     )}
                   </div>
-                  {status && (
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm">
-                        {status.is_connected ? "Đã kết nối" : "Mất kết nối"}
-                      </span>
-                      <div
-                        className={`h-3 w-3 rounded-full flex-shrink-0 ${
-                          status.is_connected ? "bg-green-500" : "bg-red-500"
-                        }`}
-                      />
+                  {(onEditDevice || onDeleteDevice) && (
+                    <div className="flex justify-end space-x-2">
+                      {onEditDevice && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onEditDevice(device);
+                          }}
+                        >
+                          Chỉnh sửa
+                        </Button>
+                      )}
+                      {onDeleteDevice && (
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onDeleteDevice(device._id);
+                          }}
+                        >
+                          Xóa
+                        </Button>
+                      )}
                     </div>
                   )}
                 </div>
-                {status && (
-                  <div className="mt-2 text-sm text-gray-600 space-y-1">
-                    <div className="grid grid-cols-2 gap-1">
-                      <div className="bg-gray-50 p-1 rounded">
-                        <span className="text-xs text-gray-500">Trạng Thái</span>
-                        <p className="font-medium">{status.toggle ? "Bật" : "Tắt"}</p>
-                      </div>
-                      <div className="bg-gray-50 p-1 rounded">
-                        <span className="text-xs text-gray-500">Chế độ</span>
-                        <p className="font-medium">{status.auto ? "Tự Động" : "Thủ Công"}</p>
-                      </div>
-                    </div>
-                    {status.power > 0 && (
-                      <div className="bg-gray-50 p-1 rounded">
-                        <span className="text-xs text-gray-500">Công suất</span>
-                        <p className="font-medium">{status.power}W</p>
-                      </div>
-                    )}
-                  </div>
-                )}
-                {(onEditDevice || onDeleteDevice) && (
-                  <div className="mt-4 flex justify-end space-x-2">
-                    {onEditDevice && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onEditDevice(device);
-                        }}
-                      >
-                        Chỉnh sửa
-                      </Button>
-                    )}
-                    {onDeleteDevice && (
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onDeleteDevice(device._id);
-                        }}
-                      >
-                        Xóa
-                      </Button>
-                    )}
-                  </div>
-                )}
               </div>
             );
           })
