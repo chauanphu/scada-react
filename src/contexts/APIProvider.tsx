@@ -52,7 +52,7 @@ const ROLE_PERMISSIONS = {
   ],
   [UserRole.ADMIN]: ["/", "/devices", "/users", "/audit", "/alerts"],
   [UserRole.OPERATOR]: ["/", "/devices"],
-  [UserRole.MONITOR]: ["/", "/audit", "/alerts"],
+  [UserRole.MONITOR]: ["/", "/devices", "/audit", "/alerts"],
 };
 
 interface APIContextType {

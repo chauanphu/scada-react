@@ -6,13 +6,14 @@ import {
   createDevice,
   deleteDevice,
   updateDevice,
-} from "../lib/api"; // Add updateDevice function
+  UserRole,
+} from "../lib/api"; // Add UserRole
 import { useAPI } from "../contexts/APIProvider";
 import { Tenant, getTenants } from "../lib/tenant.api";
 
 export const DevicesPage: React.FC = () => {
   const apiContext = useAPI();
-  const { token } = useAPI();
+  const { token, userRole } = useAPI(); // Get userRole from API context
   const [devices, setDevices] = useState<Device[]>([]);
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [loading, setLoading] = useState(true);
@@ -31,6 +32,9 @@ export const DevicesPage: React.FC = () => {
     tenant_id: "",
   });
 
+  // Check if user has admin permissions
+  const hasAdminPermissions = userRole === UserRole.ADMIN || userRole === UserRole.SUPERADMIN;
+  const isSuperAdmin = userRole === UserRole.SUPERADMIN;
   // Fetch devices
   const fetchDevices = useCallback(async () => {
     if (!token) return;
@@ -61,7 +65,7 @@ export const DevicesPage: React.FC = () => {
 
   useEffect(() => {
     fetchDevices();
-    fetchTenants();
+    if (isSuperAdmin) fetchTenants();
   }, [fetchDevices, fetchTenants]);
 
   const handleCreateDevice = async () => {
@@ -176,7 +180,10 @@ export const DevicesPage: React.FC = () => {
           <h1 className="text-2xl md:text-3xl font-bold">Quản Lý Thiết Bị</h1>
           <button
             onClick={() => setCreating(!creating)}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center"
+            className={`px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center ${
+              !isSuperAdmin ? "opacity-50 cursor-not-allowed" : ""
+            }`}
+            disabled={!isSuperAdmin}
           >
             <span className="hidden md:inline">+ Thêm Thiết Bị</span>
             <span className="md:hidden">+ Thêm</span>
@@ -429,8 +436,10 @@ export const DevicesPage: React.FC = () => {
                           <td className="px-4 py-4 flex gap-2">
                             <button
                               onClick={() => handleEditDevice(device)}
-                              className="text-blue-600 hover:text-blue-900 flex items-center"
-                              disabled={loading}
+                              className={`text-blue-600 hover:text-blue-900 flex items-center ${
+                                !hasAdminPermissions ? "opacity-50 cursor-not-allowed" : ""
+                              }`}
+                              disabled={loading || !hasAdminPermissions}
                             >
                               {loading ? (
                                 <div className="h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
@@ -440,8 +449,10 @@ export const DevicesPage: React.FC = () => {
                             </button>
                             <button
                               onClick={() => handleDeleteDevice(device._id)}
-                              className="text-red-600 hover:text-red-900 flex items-center"
-                              disabled={loading}
+                              className={`text-red-600 hover:text-red-900 flex items-center ${
+                                !hasAdminPermissions ? "opacity-50 cursor-not-allowed" : ""
+                              }`}
+                              disabled={loading || !hasAdminPermissions}
                             >
                               {loading ? (
                                 <div className="h-4 w-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></div>
