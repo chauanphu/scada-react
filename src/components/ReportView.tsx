@@ -31,6 +31,11 @@ export const ReportView: React.FC<ReportViewProps> = ({ device }) => {
   const [todayEnergy, setTodayEnergy] = useState<number>(0);
   const [totalEnergy, setTotalEnergy] = useState<number>(0);
 
+  // Calculate max Y value for the area chart
+  const maxAreaY = realTimeData.length > 0 
+    ? Math.max(...realTimeData.filter(val => !isNaN(val))) + 1 
+    : 1;
+
   useEffect(() => {
     const status = deviceStatuses && device?._id ? deviceStatuses[device._id] : null;
     if (status) {
@@ -78,6 +83,17 @@ export const ReportView: React.FC<ReportViewProps> = ({ device }) => {
         </div>
       </div>
 
+      {/* Real-Time Area Chart */}
+      <div className="w-full h-64 md:h-80">
+        <AreaChart
+          data={realTimeData}
+          labels={labels}
+          title="Công suất theo thời gian thực"
+          maxY={maxAreaY}
+        />
+      </div>
+
+
       {/* Filters Section */}
       <div className="flex flex-col md:flex-row flex-wrap gap-4 items-center">
         <input
@@ -114,22 +130,14 @@ export const ReportView: React.FC<ReportViewProps> = ({ device }) => {
           Áp dụng
         </Button>
       </div>
-
-      {/* Real-Time Area Chart */}
-      <div className="w-full h-64 md:h-80">
-        <AreaChart
-          data={realTimeData}
-          labels={labels}
-          title="Công suất theo thời gian thực (2 giờ gần nhất)"
-        />
-      </div>
-
+      
       {/* Bar Chart */}
       <div className="w-full h-64 md:h-80">
         <BarChart
           deviceId={device._id}
           filters={filters}
           title="Tiêu thụ năng lượng"
+          scaleToMaxValue={true}
         />
       </div>
     </div>
