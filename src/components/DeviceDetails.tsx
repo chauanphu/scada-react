@@ -20,6 +20,9 @@ export const DeviceDetails = ({ device, deviceStatus }: DeviceDetailsProps) => {
   const { addToast } = useToast();
   const [loading, setLoading] = useState(false);
 
+  // Create local state for optimistic UI updates
+  const [localDeviceStatus, setLocalDeviceStatus] = useState<DeviceStatus | undefined>(deviceStatus);
+
   const [hourOn, setHourOn] = useState(deviceStatus?.hour_on || 0);
   const [minuteOn, setMinuteOn] = useState(deviceStatus?.minute_on || 0);
   const [hourOff, setHourOff] = useState(deviceStatus?.hour_off || 0);
@@ -28,6 +31,7 @@ export const DeviceDetails = ({ device, deviceStatus }: DeviceDetailsProps) => {
   // Update state values when deviceStatus changes
   useEffect(() => {
     if (deviceStatus) {
+      setLocalDeviceStatus(deviceStatus);
       setHourOn(deviceStatus.hour_on || 0);
       setMinuteOn(deviceStatus.minute_on || 0);
       setHourOff(deviceStatus.hour_off || 0);
@@ -37,53 +41,110 @@ export const DeviceDetails = ({ device, deviceStatus }: DeviceDetailsProps) => {
 
   if (!apiContext || !wsContext) return null;
 
-  const isIdle = deviceStatus?.state === "";
-  const isConnected = deviceStatus?.is_connected;
+  const isIdle = localDeviceStatus?.state === "";
+  const isConnected = localDeviceStatus?.is_connected;
 
   const handleTogglePower = async () => {
-    if (!deviceStatus || isIdle) return;
+    if (!localDeviceStatus || isIdle) return;
     setLoading(true);
+    
+    // Optimistically update UI
+    const newToggleState = !localDeviceStatus.toggle;
+    setLocalDeviceStatus({
+      ...localDeviceStatus,
+      toggle: newToggleState,
+      state: newToggleState ? "ON" : "OFF"
+    });
+    
     try {
-      // Toggle the device state by sending the opposite of the current state
-      await apiContext.toggleDevice(device._id, !deviceStatus.toggle);
-      addToast("success", `Đã ${deviceStatus.toggle ? "tắt" : "bật"} thiết bị`);
+      await apiContext.toggleDevice(device._id, newToggleState);
+      addToast("success", `Đã ${newToggleState ? "bật" : "tắt"} thiết bị`);
     } catch (err) {
       console.error("Lỗi khi thay đổi trạng thái:", err);
       addToast("error", "Không thể thay đổi trạng thái");
+      
+      // Revert on failure
+      setLocalDeviceStatus({
+        ...localDeviceStatus,
+        toggle: !newToggleState,
+        state: !newToggleState ? "ON" : "OFF"
+      });
     } finally {
       setLoading(false);
     }
   };
 
   const handleToggleAuto = async () => {
-    if (!deviceStatus || isIdle) return;
+    if (!localDeviceStatus || isIdle) return;
     setLoading(true);
+    
+    // Optimistically update UI
+    const newAutoState = !localDeviceStatus.auto;
+    setLocalDeviceStatus({
+      ...localDeviceStatus,
+      auto: newAutoState
+    });
+    
     try {
-      await apiContext.setDeviceAuto(device._id, !deviceStatus.auto);
-      addToast("success", `Đã ${deviceStatus.auto ? "tắt" : "bật"} chế độ tự động`);
+      await apiContext.setDeviceAuto(device._id, newAutoState);
+      addToast("success", `Đã ${newAutoState ? "bật" : "tắt"} chế độ tự động`);
     } catch (err) {
       console.error("Lỗi khi thay đổi chế độ tự động:", err);
       addToast("error", "Không thể thay đổi chế độ");
+      
+      // Revert on failure
+      setLocalDeviceStatus({
+        ...localDeviceStatus,
+        auto: !newAutoState
+      });
     } finally {
       setLoading(false);
     }
   };
 
   const handleSetSchedule = async () => {
-    if (!deviceStatus || isIdle) return;
+    if (!localDeviceStatus || isIdle) return;
     setLoading(true);
+    
+    // Save original schedule for reverting if needed
+    const originalSchedule = {
+      hour_on: localDeviceStatus.hour_on,
+      minute_on: localDeviceStatus.minute_on,
+      hour_off: localDeviceStatus.hour_off,
+      minute_off: localDeviceStatus.minute_off,
+    };
+    
+    // Optimistically update UI
+    const newSchedule = {
+      hour_on: hourOn,
+      minute_on: minuteOn,
+      hour_off: hourOff,
+      minute_off: minuteOff,
+    };
+    
+    setLocalDeviceStatus({
+      ...localDeviceStatus,
+      ...newSchedule
+    });
+    
     try {
-      const newSchedule = {
-        hour_on: hourOn,
-        minute_on: minuteOn,
-        hour_off: hourOff,
-        minute_off: minuteOff,
-      };
       await apiContext.setDeviceSchedule(device._id, newSchedule);
       addToast("success", "Lịch trình đã được cập nhật");
     } catch (err) {
       console.error("Lỗi khi đặt lịch trình:", err);
       addToast("error", "Không thể đặt lịch trình");
+      
+      // Revert UI on failure
+      setLocalDeviceStatus({
+        ...localDeviceStatus,
+        ...originalSchedule
+      });
+      
+      // Also revert input values
+      setHourOn(originalSchedule.hour_on || 0);
+      setMinuteOn(originalSchedule.minute_on || 0);
+      setHourOff(originalSchedule.hour_off || 0);
+      setMinuteOff(originalSchedule.minute_off || 0);
     } finally {
       setLoading(false);
     }
@@ -92,16 +153,16 @@ export const DeviceDetails = ({ device, deviceStatus }: DeviceDetailsProps) => {
   const getDeviceStateColor = () => {
     if (!isConnected) return "bg-gray-500";
     if (isIdle) return "bg-yellow-500";
-    if (deviceStatus?.state === "ON") return "bg-green-500";
+    if (localDeviceStatus?.state === "ON") return "bg-green-500";
     return "bg-red-500";
   };
 
   const getDeviceStateText = () => {
     if (!isConnected) return "Mất kết nối";
     if (isIdle) return "Đang đồng bộ";
-    if (deviceStatus?.state === "ON") return "Đang bật";
-    if (deviceStatus?.state === "OFF") return "Đang tắt";
-    return deviceStatus?.state || "Không xác định";
+    if (localDeviceStatus?.state === "ON") return "Đang bật";
+    if (localDeviceStatus?.state === "OFF") return "Đang tắt";
+    return localDeviceStatus?.state || "Không xác định";
   };
 
   return (
@@ -128,7 +189,7 @@ export const DeviceDetails = ({ device, deviceStatus }: DeviceDetailsProps) => {
         {/* Toggle Power Switch */}
         <div className="flex items-center justify-between">
           <Switch
-            checked={deviceStatus?.toggle || false}
+            checked={localDeviceStatus?.toggle || false}
             onChange={handleTogglePower}
             disabled={loading || !isConnected || isIdle}
             onColor="#4ade80"  // green when "on"
@@ -152,7 +213,7 @@ export const DeviceDetails = ({ device, deviceStatus }: DeviceDetailsProps) => {
         <div className="flex flex-col gap-2">
           <h3 className="text-sm font-medium text-gray-700">Chế độ</h3>
           <Button
-            variant={deviceStatus?.auto ? "outline" : "default"}
+            variant={localDeviceStatus?.auto ? "outline" : "default"}
             onClick={handleToggleAuto}
             disabled={loading || !isConnected || isIdle}
             className="w-full"
@@ -160,7 +221,7 @@ export const DeviceDetails = ({ device, deviceStatus }: DeviceDetailsProps) => {
             Thủ công
           </Button>
           <Button
-            variant={deviceStatus?.auto ? "default" : "outline"}
+            variant={localDeviceStatus?.auto ? "default" : "outline"}
             onClick={handleToggleAuto}
             disabled={loading || !isConnected || isIdle}
             className="w-full"
@@ -227,28 +288,28 @@ export const DeviceDetails = ({ device, deviceStatus }: DeviceDetailsProps) => {
       </div>
 
       {/* Real-Time Indicators */}
-      {deviceStatus && (
+      {localDeviceStatus && (
         <div className="space-y-4">
           <div className="bg-gray-50 p-3 rounded-lg">
             <p className="text-sm text-gray-600">Công suất</p>
-            <p className="font-medium">{deviceStatus.power}W</p>
+            <p className="font-medium">{localDeviceStatus.power}W</p>
           </div>
           <div className="bg-gray-50 p-3 rounded-lg">
             <p className="text-sm text-gray-600">Dòng điện</p>
-            <p className="font-medium">{deviceStatus.current}A</p>
+            <p className="font-medium">{localDeviceStatus.current}A</p>
           </div>
           <div className="bg-gray-50 p-3 rounded-lg">
             <p className="text-sm text-gray-600">Điện áp</p>
-            <p className="font-medium">{deviceStatus.voltage}V</p>
+            <p className="font-medium">{localDeviceStatus.voltage}V</p>
           </div>
           <div className="bg-gray-50 p-3 rounded-lg">
             <p className="text-sm text-gray-600">Hệ số công suất</p>
-            <p className="font-medium">{deviceStatus.power_factor}</p>
+            <p className="font-medium">{localDeviceStatus.power_factor}</p>
           </div>
           <div className="bg-gray-50 p-3 rounded-lg">
             <p className="text-sm text-gray-600">Tổng năng lượng</p>
             <p className="font-medium">
-              {deviceStatus.total_energy.toFixed(4)} kWh
+              {localDeviceStatus.total_energy.toFixed(4)} kWh
             </p>
           </div>
         </div>
