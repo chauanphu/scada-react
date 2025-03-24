@@ -121,7 +121,7 @@ export const DeviceMap = ({
 
   return (
     <div className="flex h-full">
-      <div className="w-full h-full relative">
+      <div className="w-full h-full relative" style={{ zIndex: 2 }}>
         <MapContainer
           center={getDefaultCenter()}
           zoom={13}
@@ -137,13 +137,12 @@ export const DeviceMap = ({
           <MapController devices={devices} selectedDevice={selectedDevice} />
           {validDevices.map((device) => {
             const status = deviceStatuses[device._id];
-
             const icon = createIcon(
               status?.is_connected || false,
               status?.toggle || false,
               device.name || "Không xác định"
             );
-
+            const isSelected = selectedDevice && device._id === selectedDevice._id;
             return (
               <Marker
                 key={device._id}
@@ -152,7 +151,9 @@ export const DeviceMap = ({
                 eventHandlers={{
                   click: () => onDeviceSelect(device),
                 }}
-              ></Marker>
+                zIndexOffset={isSelected ? 1000 : 0}
+                opacity={isSelected ? 1 : 0.8}
+              />
             );
           })}
         </MapContainer>
