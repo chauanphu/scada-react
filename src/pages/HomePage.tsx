@@ -81,14 +81,14 @@ export const HomePage = () => {
                 variant={activeView === "control" ? "default" : "outline"}
                 onClick={() => setActiveView("control")}
               >
-                Bảng điều khiển
+                Bản đồ  
               </Button>
               <Button
                 variant={activeView === "report" ? "default" : "outline"}
                 onClick={() => setActiveView("report")}
                 disabled={!selectedDevice}
               >
-                Báo cáo tiêu thụ
+                Báo cáo
               </Button>
             </div>
           )}
