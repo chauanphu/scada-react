@@ -28,19 +28,33 @@ export const DeviceList: React.FC<DeviceListProps> = ({
   };
 
   const getDeviceStatusText = (status: DeviceStatus) => {
-    if (!status?.is_connected) return "Đang lấy dữ liệu...";
-    if (status.state === "") return "Đang đồng bộ...";
-    if (status.state === "ON") return "Đang bật";
-    if (status.state === "OFF") return "Đang tắt";
-    return status.state || "Không xác định";
+    if (!status?.is_connected) return "Đang lấy dữ liệu";
+    
+    switch (status.state) {
+      case "Mất kết nối":
+        return "Mất kết nối";
+      case "Thiết bị hoạt động":
+        return "Thiết bị hoạt động";
+      case "Thiết bị tắt":
+        return "Thiết bị tắt";
+      default:
+        return status.state || "Không xác định";
+    }
   };
 
   const getStatusColor = (status: DeviceStatus) => {
-    if (!status?.is_connected) return "text-gray-500";
-    if (status.state === "") return "text-yellow-500";
-    if (status.state === "ON") return "text-green-500";
-    if (status.state === "OFF") return "text-red-500";
-    return "text-gray-600";
+    if (!status?.is_connected) return "text-yellow-500";
+    
+    switch (status.state) {
+      case "Mất kết nối":
+        return "text-gray-500";
+      case "Thiết bị hoạt động":
+        return "text-green-500";
+      case "Thiết bị tắt":
+        return "text-red-500";
+      default:
+        return "text-gray-600";
+    }
   };
   
   return (
