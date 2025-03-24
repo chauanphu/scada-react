@@ -134,30 +134,30 @@ export const HomePage = () => {
             className="w-full p-2 bg-blue-500 text-white rounded-lg shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             onClick={() => setShowDeviceList(true)}
           >
-            Tìm kiếm thiết bị
+            Chọn thiết bị
           </button>
         </div>
 
         {/* Main Content: Toggle Buttons and Map / Report View */}
         <div className="flex-1 p-2">
-          {selectedDevice && (
-            <div className="mb-2 flex gap-2">
+            {selectedDevice && (
+            <div className="mb-2 py-2 flex justify-center gap-2">
               <Button
-                variant={activeView === "control" ? "default" : "outline"}
-                onClick={() => setActiveView("control")}
+              variant={activeView === "control" ? "default" : "outline"}
+              onClick={() => setActiveView("control")}
               >
-                Bảng điều khiển
+              Bảng điều khiển
               </Button>
               <Button
-                variant={activeView === "report" ? "default" : "outline"}
-                onClick={() => setActiveView("report")}
-                disabled={!selectedDevice}
+              variant={activeView === "report" ? "default" : "outline"}
+              onClick={() => setActiveView("report")}
+              disabled={!selectedDevice}
               >
-                Báo cáo tiêu thụ
+              Báo cáo tiêu thụ
               </Button>
             </div>
-          )}
-          <div className="h-64 overflow-hidden bg-gray-100 shadow-lg rounded-lg">
+            )}
+          <div className="overflow-hidden bg-gray-100 shadow-lg rounded-lg" style={{ height: "50vh" }}>
             {activeView === "control" ? (
               <ErrorBoundary>
                 <DeviceMap
