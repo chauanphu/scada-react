@@ -19,6 +19,7 @@ interface WebSocketContextType {
   setSelectedDevice: React.Dispatch<React.SetStateAction<Device | null>>;
   connectWebSocket: () => void;
   disconnectWebSocket: () => void;
+  connectionLost: boolean; // Added this property to the interface
 }
 
 export const WebSocketContext = createContext<WebSocketContextType | null>(null);
@@ -39,7 +40,8 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
   const reconnectTimeoutRef = useRef<NodeJS.Timeout>();
   const isFirstConnectRef = useRef(true);
   const connectionAttemptsRef = useRef(0);
-  const maxReconnectAttempts = 5;
+  const maxReconnectAttempts = 3; // Changed from 5 to 3 as required
+  const [connectionLost, setConnectionLost] = useState(false);
 
   const handleDeviceStatus = useCallback((deviceStatus: any) => {
     if (!deviceStatus?._id) return;
@@ -279,6 +281,10 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
 
     ws.onopen = () => {
       connectionAttemptsRef.current = 0;
+      if (connectionLost) {
+        setConnectionLost(false);
+        addToast('success', 'Kết nối đã được khôi phục');
+      }
       if (isFirstConnectRef.current) {
         isFirstConnectRef.current = false;
         fetchDevices();
@@ -288,20 +294,32 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
     ws.onclose = (event) => {
       console.log('WebSocket disconnected:', event);
       wsRef.current = null;
+      
+      // Set connection lost state to true for UI feedback
+      if (!connectionLost) {
+        setConnectionLost(true);
+        addToast('warning', 'Kết nối bị gián đoạn, đang thử kết nối lại...');
+      }
 
-      if (!reconnectTimeoutRef.current && selectedDevice && connectionAttemptsRef.current < maxReconnectAttempts) {
+      if (!reconnectTimeoutRef.current && connectionAttemptsRef.current < maxReconnectAttempts) {
         connectionAttemptsRef.current++;
-        const delay = Math.min(1000 * Math.pow(2, connectionAttemptsRef.current), 30000);
+        const delay = Math.min(1000 * Math.pow(2, connectionAttemptsRef.current), 10000); // Exponential backoff with max 10s
 
+        console.log(`Attempting to reconnect (${connectionAttemptsRef.current}/${maxReconnectAttempts}) in ${delay}ms`);
+        
         reconnectTimeoutRef.current = setTimeout(() => {
           reconnectTimeoutRef.current = undefined;
           connectWebSocket();
         }, delay);
+      } else if (connectionAttemptsRef.current >= maxReconnectAttempts) {
+        addToast('error', 'Không thể kết nối lại sau nhiều lần thử. Vui lòng làm mới trang.');
+        setConnectionLost(true);
       }
     };
 
     ws.onerror = (error: Event) => {
       console.error('WebSocket error:', error);
+      // Don't set connection lost here as onclose will be called after onerror
     };
 
     ws.onmessage = (event: MessageEvent) => {
@@ -370,11 +388,10 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
         console.error('Raw message data:', event.data);
       }
     };
-  }, [apiContext?.token, selectedDevice, fetchDevices, handleDeviceStatus, handleMetricsUpdate, handleCombinedData]);
+  }, [apiContext?.token, selectedDevice, fetchDevices, handleDeviceStatus, handleMetricsUpdate, handleCombinedData, connectionLost, addToast]);
 
   const disconnectWebSocket = useCallback(() => {
     if (wsRef.current) {
-      // console.log('Disconnecting WebSocket...');
       wsRef.current.close();
       wsRef.current = null;
     }
@@ -383,6 +400,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
       reconnectTimeoutRef.current = undefined;
     }
     connectionAttemptsRef.current = 0;
+    setConnectionLost(false);
   }, []);
 
   // Initialize WebSocket when authenticated
@@ -418,6 +436,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
     setSelectedDevice,
     connectWebSocket,
     disconnectWebSocket,
+    connectionLost, // Expose connection status to consuming components
   };
 
   return <WebSocketContext.Provider value={value}>{children}</WebSocketContext.Provider>;
