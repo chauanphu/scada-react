@@ -7,7 +7,6 @@ import { useToast } from "../contexts/ToastProvider";
 import Switch from "react-switch";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
-import { Badge } from "./ui/badge";
 
 interface DeviceDetailsProps {
   device: Device;
@@ -19,6 +18,7 @@ export const DeviceDetails = ({ device, deviceStatus }: DeviceDetailsProps) => {
   const wsContext = useWebSocket();
   const { addToast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [editingSchedule, setEditingSchedule] = useState(false);
 
   // Create local state for optimistic UI updates
   const [localDeviceStatus, setLocalDeviceStatus] = useState<DeviceStatus | undefined>(deviceStatus);
@@ -32,12 +32,16 @@ export const DeviceDetails = ({ device, deviceStatus }: DeviceDetailsProps) => {
   useEffect(() => {
     if (deviceStatus) {
       setLocalDeviceStatus(deviceStatus);
-      setHourOn(deviceStatus.hour_on || 0);
-      setMinuteOn(deviceStatus.minute_on || 0);
-      setHourOff(deviceStatus.hour_off || 0);
-      setMinuteOff(deviceStatus.minute_off || 0);
+      
+      // Only update form values if not currently editing
+      if (!editingSchedule) {
+        setHourOn(deviceStatus.hour_on || 0);
+        setMinuteOn(deviceStatus.minute_on || 0);
+        setHourOff(deviceStatus.hour_off || 0);
+        setMinuteOff(deviceStatus.minute_off || 0);
+      }
     }
-  }, [deviceStatus]);
+  }, [deviceStatus, editingSchedule]);
 
   if (!apiContext || !wsContext) return null;
 
@@ -102,6 +106,21 @@ export const DeviceDetails = ({ device, deviceStatus }: DeviceDetailsProps) => {
     }
   };
 
+  const startEditing = () => {
+    setEditingSchedule(true);
+  };
+
+  const cancelEditing = () => {
+    // Reset form values to match current device status
+    if (localDeviceStatus) {
+      setHourOn(localDeviceStatus.hour_on || 0);
+      setMinuteOn(localDeviceStatus.minute_on || 0);
+      setHourOff(localDeviceStatus.hour_off || 0);
+      setMinuteOff(localDeviceStatus.minute_off || 0);
+    }
+    setEditingSchedule(false);
+  };
+
   const handleSetSchedule = async () => {
     if (!localDeviceStatus || isIdle) return;
     setLoading(true);
@@ -130,6 +149,7 @@ export const DeviceDetails = ({ device, deviceStatus }: DeviceDetailsProps) => {
     try {
       await apiContext.setDeviceSchedule(device._id, newSchedule);
       addToast("success", "Lịch trình đã được cập nhật");
+      setEditingSchedule(false); // Exit edit mode after successful save
     } catch (err) {
       console.error("Lỗi khi đặt lịch trình:", err);
       addToast("error", "Không thể đặt lịch trình");
@@ -139,12 +159,6 @@ export const DeviceDetails = ({ device, deviceStatus }: DeviceDetailsProps) => {
         ...localDeviceStatus,
         ...originalSchedule
       });
-      
-      // Also revert input values
-      setHourOn(originalSchedule.hour_on || 0);
-      setMinuteOn(originalSchedule.minute_on || 0);
-      setHourOff(originalSchedule.hour_off || 0);
-      setMinuteOff(originalSchedule.minute_off || 0);
     } finally {
       setLoading(false);
     }
@@ -236,7 +250,7 @@ export const DeviceDetails = ({ device, deviceStatus }: DeviceDetailsProps) => {
               onChange={(e) => setHourOn(Number(e.target.value))}
               min={0}
               max={23}
-              disabled={!isConnected || isIdle}
+              disabled={!isConnected || isIdle || (!editingSchedule && isConnected)}
             />
             <Input
               type="number"
@@ -245,7 +259,7 @@ export const DeviceDetails = ({ device, deviceStatus }: DeviceDetailsProps) => {
               onChange={(e) => setMinuteOn(Number(e.target.value))}
               min={0}
               max={59}
-              disabled={!isConnected || isIdle}
+              disabled={!isConnected || isIdle || (!editingSchedule && isConnected)}
             />
             <Input
               type="number"
@@ -254,7 +268,7 @@ export const DeviceDetails = ({ device, deviceStatus }: DeviceDetailsProps) => {
               onChange={(e) => setHourOff(Number(e.target.value))}
               min={0}
               max={23}
-              disabled={!isConnected || isIdle}
+              disabled={!isConnected || isIdle || (!editingSchedule && isConnected)}
             />
             <Input
               type="number"
@@ -263,17 +277,42 @@ export const DeviceDetails = ({ device, deviceStatus }: DeviceDetailsProps) => {
               onChange={(e) => setMinuteOff(Number(e.target.value))}
               min={0}
               max={59}
-              disabled={!isConnected || isIdle}
+              disabled={!isConnected || isIdle || (!editingSchedule && isConnected)}
             />
           </div>
-          <Button
-            variant="default"
-            onClick={handleSetSchedule}
-            disabled={loading || !isConnected || isIdle}
-            className="w-full"
-          >
-            Cài đặt lịch hoạt động
-          </Button>
+          
+          <div className="flex gap-2">
+            {!editingSchedule ? (
+              <Button
+                variant="default"
+                onClick={startEditing}
+                disabled={loading || !isConnected || isIdle}
+                className="w-full"
+              >
+                Chỉnh lịch hoạt động
+              </Button>
+            ) : (
+              <>
+                <Button
+                  variant="default"
+                  onClick={handleSetSchedule}
+                  disabled={loading || !isConnected || isIdle}
+                  className="flex-1"
+                >
+                  Xác nhận
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={cancelEditing}
+                  disabled={loading}
+                  className="flex-1"
+                >
+                  Hủy
+                </Button>
+              </>
+            )}
+          </div>
+          
           {isIdle && (
             <p className="text-xs text-yellow-600 text-center mt-2">
               Thiết bị đang đồng bộ. Vui lòng đợi để điều khiển.
@@ -307,9 +346,9 @@ export const DeviceDetails = ({ device, deviceStatus }: DeviceDetailsProps) => {
             <p className="font-medium">{localDeviceStatus.power_factor}</p>
           </div>
           <div className="bg-gray-50 p-3 rounded-lg">
-            <p className="text-sm text-gray-600">Tổng năng lượng</p>
+            <p className="text-sm text-gray-600">Chỉ số công tơ</p>
             <p className="font-medium">
-              {localDeviceStatus.total_energy.toFixed(4)} kWh
+              {localDeviceStatus?.energy_meter || "N/A"} kWh
             </p>
           </div>
         </div>
