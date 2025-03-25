@@ -79,9 +79,9 @@ export const DeviceDetails = ({ device, deviceStatus }: DeviceDetailsProps) => {
             resetVerification();
           } else {
             // Mismatch detected - only count if this is a new update after our command
-            if (mismatchCount === 0) {
+            if (mismatchCount < 2) {
               // First mismatch - ignore and increment counter
-              setMismatchCount(1);
+              setMismatchCount(mismatchCount + 1);
             } else {
               // Continued mismatch - show error
               setVerificationError(true);
