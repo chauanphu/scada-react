@@ -42,8 +42,8 @@ export const DeviceDetails = ({ device, deviceStatus }: DeviceDetailsProps) => {
   if (!apiContext || !wsContext) return null;
 
   const isIdle = localDeviceStatus?.state === "";
-  const isConnected = localDeviceStatus?.is_connected;
-
+  const isConnected = localDeviceStatus?.state !== "Mất kết nối";
+  
   const handleTogglePower = async () => {
     if (!localDeviceStatus || isIdle) return;
     setLoading(true);
@@ -177,11 +177,6 @@ export const DeviceDetails = ({ device, deviceStatus }: DeviceDetailsProps) => {
             {getDeviceStateText()}
           </span>
         </div>
-        {isIdle && (
-          <Badge variant="outline" className="bg-yellow-50 text-yellow-800 border-yellow-300">
-            Đang đồng bộ
-          </Badge>
-        )}
       </div>
 
       {/* Control Panel: Stacked Layout */}
@@ -241,7 +236,7 @@ export const DeviceDetails = ({ device, deviceStatus }: DeviceDetailsProps) => {
               onChange={(e) => setHourOn(Number(e.target.value))}
               min={0}
               max={23}
-              disabled={isIdle}
+              disabled={!isConnected || isIdle}
             />
             <Input
               type="number"
@@ -250,7 +245,7 @@ export const DeviceDetails = ({ device, deviceStatus }: DeviceDetailsProps) => {
               onChange={(e) => setMinuteOn(Number(e.target.value))}
               min={0}
               max={59}
-              disabled={isIdle}
+              disabled={!isConnected || isIdle}
             />
             <Input
               type="number"
@@ -259,7 +254,7 @@ export const DeviceDetails = ({ device, deviceStatus }: DeviceDetailsProps) => {
               onChange={(e) => setHourOff(Number(e.target.value))}
               min={0}
               max={23}
-              disabled={isIdle}
+              disabled={!isConnected || isIdle}
             />
             <Input
               type="number"
@@ -268,7 +263,7 @@ export const DeviceDetails = ({ device, deviceStatus }: DeviceDetailsProps) => {
               onChange={(e) => setMinuteOff(Number(e.target.value))}
               min={0}
               max={59}
-              disabled={isIdle}
+              disabled={!isConnected || isIdle}
             />
           </div>
           <Button
@@ -282,6 +277,11 @@ export const DeviceDetails = ({ device, deviceStatus }: DeviceDetailsProps) => {
           {isIdle && (
             <p className="text-xs text-yellow-600 text-center mt-2">
               Thiết bị đang đồng bộ. Vui lòng đợi để điều khiển.
+            </p>
+          )}
+          {!isConnected && (
+            <p className="text-xs text-red-600 text-center mt-2">
+              Mất kết nối với thiết bị. Không thể điều khiển.
             </p>
           )}
         </div>

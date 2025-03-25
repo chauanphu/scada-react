@@ -43,185 +43,43 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
   const maxReconnectAttempts = 3; // Changed from 5 to 3 as required
   const [connectionLost, setConnectionLost] = useState(false);
 
-  const handleDeviceStatus = useCallback((deviceStatus: any) => {
-    if (!deviceStatus?._id) return;
+  const handleDeviceData = useCallback((data: any) => {
+    if (!data?._id) return;
 
-    // Map the new format to our DeviceStatus interface
-    const deviceId = deviceStatus._id;
-    
-    // Get existing status values to preserve metrics if they aren't in the new message
+    const deviceId = data._id;
     const existingStatus = deviceStatuses[deviceId] || {};
     
-    // Create the updated device status with both new data and preserved existing metrics
+    // Build the updated status, preserving metrics if not provided in this update
     const updatedStatus: DeviceStatus = {
-      // Preserve existing metrics if they exist
-      power: existingStatus.power || 0,
-      current: existingStatus.current || 0,
-      voltage: existingStatus.voltage || 0,
-      power_factor: existingStatus.power_factor || 0,
-      total_energy: existingStatus.total_energy || 0,
-      
-      // Add new fields from the updated format
+      // Basic device info - always updated
       device_id: deviceId,
-      device_name: deviceStatus.name || existingStatus.device_name,
-      is_connected: true,
-      toggle: deviceStatus.toggle !== undefined ? deviceStatus.toggle : existingStatus.toggle || false,
-      auto: deviceStatus.auto !== undefined ? deviceStatus.auto : existingStatus.auto || false,
-      hour_on: deviceStatus.hour_on !== undefined ? deviceStatus.hour_on : existingStatus.hour_on || 0,
-      hour_off: deviceStatus.hour_off !== undefined ? deviceStatus.hour_off : existingStatus.hour_off || 0,
-      minute_on: deviceStatus.minute_on !== undefined ? deviceStatus.minute_on : existingStatus.minute_on || 0,
-      minute_off: deviceStatus.minute_off !== undefined ? deviceStatus.minute_off : existingStatus.minute_off || 0,
-      state: deviceStatus.state,
-      
-      // Preserve coordinates if available
-      latitude: existingStatus.latitude,
-      longitude: existingStatus.longitude,
-      
-      // Add required fields that were missing
-      mac: deviceStatus.mac || existingStatus.mac || "",
-      timestamp: deviceStatus.timestamp || existingStatus.timestamp || new Date().toISOString(),
-      tenant_id: deviceStatus.tenant_id || existingStatus.tenant_id || "",
-      
-      // Preserve energy meter data if it exists
-      energy_meter: existingStatus.energy_meter,
-    };
-
-    // Update device status
-    setDeviceStatus(prev => ({
-      ...prev,
-      [deviceId]: updatedStatus
-    }));
-
-    // Update device info in devices list if needed
-    setDevices(prev => {
-      const index = prev.findIndex(d => d._id === deviceId);
-      if (index === -1) return prev;
-
-      const updatedDevices = [...prev];
-      const currentDevice = updatedDevices[index];
-
-      // Update the device name if changed
-      if (deviceStatus.name && deviceStatus.name !== currentDevice.name) {
-        updatedDevices[index] = {
-          ...currentDevice,
-          name: deviceStatus.name,
-        };
-        return updatedDevices;
-      }
-
-      return prev;
-    });
-  }, [deviceStatuses]);
-
-  const handleMetricsUpdate = useCallback((metrics: any) => {
-    if (!metrics?.device_id) return;
-
-    // Update only the metrics portions of the device status
-    setDeviceStatus(prev => {
-      const existingStatus = prev[metrics.device_id] || {
-        device_id: metrics.device_id,
-        is_connected: true,
-        toggle: false,
-        auto: false,
-        hour_on: 0,
-        hour_off: 0,
-        minute_on: 0,
-        minute_off: 0,
-        power: 0,
-        current: 0,
-        voltage: 0,
-        power_factor: 0,
-        total_energy: 0,
-        // Add required fields with default values
-        mac: "",
-        timestamp: new Date().toISOString(),
-        tenant_id: "",
-      };
-
-      return {
-        ...prev,
-        [metrics.device_id]: {
-          ...existingStatus,
-          power: metrics.power !== undefined ? metrics.power : existingStatus.power,
-          current: metrics.current !== undefined ? metrics.current : existingStatus.current,
-          voltage: metrics.voltage !== undefined ? metrics.voltage : existingStatus.voltage,
-          power_factor: metrics.power_factor !== undefined ? metrics.power_factor : existingStatus.power_factor,
-          total_energy: metrics.total_energy !== undefined ? metrics.total_energy : existingStatus.total_energy,
-          latitude: metrics.latitude !== undefined ? metrics.latitude : existingStatus.latitude,
-          longitude: metrics.longitude !== undefined ? metrics.longitude : existingStatus.longitude,
-          is_connected: true,
-          // Update required fields if provided in the metrics
-          mac: metrics.mac || existingStatus.mac,
-          timestamp: metrics.timestamp || new Date().toISOString(),
-          tenant_id: metrics.tenant_id || existingStatus.tenant_id,
-          // Add energy_meter if it exists
-          energy_meter: metrics.energy_meter !== undefined ? metrics.energy_meter : existingStatus.energy_meter,
-        }
-      };
-    });
-
-    // Update coordinates in device list if provided
-    if (metrics.latitude !== undefined && metrics.longitude !== undefined) {
-      setDevices(prev => {
-        const index = prev.findIndex(d => d._id === metrics.device_id);
-        if (index === -1) return prev;
-
-        const updatedDevices = [...prev];
-        const currentDevice = updatedDevices[index];
-
-        if (
-          metrics.latitude !== currentDevice.latitude ||
-          metrics.longitude !== currentDevice.longitude
-        ) {
-          updatedDevices[index] = {
-            ...currentDevice,
-            latitude: metrics.latitude,
-            longitude: metrics.longitude,
-          };
-          return updatedDevices;
-        }
-        return prev;
-      });
-    }
-  }, []);
-
-  const handleCombinedData = useCallback((data: any) => {
-    if (!data?._id || !data?.device_id) return;
-
-    // This is a combined format with both device info and metrics
-    const deviceId = data._id;
-
-    const updatedStatus: DeviceStatus = {
-      // Basic device info
-      device_id: deviceId,
-      device_name: data.name || data.device_name,
-      mac: data.mac || "",
-      tenant_id: data.tenant_id || "",
+      device_name: data.name || existingStatus.device_name || "",
+      mac: data.mac || existingStatus.mac || "",
+      tenant_id: data.tenant_id || existingStatus.tenant_id || "",
       timestamp: data.timestamp || new Date().toISOString(),
+      is_connected: data.is_connected !== undefined ? data.is_connected : true,
       
-      // Control settings
-      toggle: data.toggle !== undefined ? data.toggle : false,
-      auto: data.auto !== undefined ? data.auto : false,
-      hour_on: data.hour_on !== undefined ? data.hour_on : 0,
-      hour_off: data.hour_off !== undefined ? data.hour_off : 0,
-      minute_on: data.minute_on !== undefined ? data.minute_on : 0,
-      minute_off: data.minute_off !== undefined ? data.minute_off : 0,
-      state: data.state,
+      // Control settings - always returned from server
+      toggle: data.toggle !== undefined ? data.toggle : existingStatus.toggle || false,
+      auto: data.auto !== undefined ? data.auto : existingStatus.auto || false,
+      hour_on: data.hour_on !== undefined ? data.hour_on : existingStatus.hour_on || 0,
+      hour_off: data.hour_off !== undefined ? data.hour_off : existingStatus.hour_off || 0,
+      minute_on: data.minute_on !== undefined ? data.minute_on : existingStatus.minute_on || 0,
+      minute_off: data.minute_off !== undefined ? data.minute_off : existingStatus.minute_off || 0,
+      state: data.state !== undefined ? data.state : existingStatus.state,
       
-      // Metrics
-      voltage: data.voltage || 0,
-      current: data.current || 0,
-      power: data.power || 0,
-      power_factor: data.power_factor || 0,
-      total_energy: data.total_energy || 0,
-      energy_meter: data.energy_meter,
+      // Location - always returned from server
+      latitude: data.latitude !== undefined ? data.latitude : existingStatus.latitude,
+      longitude: data.longitude !== undefined ? data.longitude : existingStatus.longitude,
       
-      // Location
-      latitude: data.latitude,
-      longitude: data.longitude,
-      
-      // Status
-      is_connected: true,
+      // Metrics - only include if provided or preserved from existing data
+      // If device is disconnected, metrics might be omitted
+      power: data.power !== undefined ? data.power : existingStatus.power || 0,
+      current: data.current !== undefined ? data.current : existingStatus.current || 0,
+      voltage: data.voltage !== undefined ? data.voltage : existingStatus.voltage || 0,
+      power_factor: data.power_factor !== undefined ? data.power_factor : existingStatus.power_factor || 0,
+      total_energy: data.total_energy !== undefined ? data.total_energy : existingStatus.total_energy || 0,
+      energy_meter: data.energy_meter !== undefined ? data.energy_meter : existingStatus.energy_meter,
     };
 
     // Update device status
@@ -238,9 +96,9 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
       const updatedDevices = [...prev];
       const currentDevice = updatedDevices[index];
 
-      // Check if we need to update device properties
+      // Only update device properties if there are actual changes
       if (
-        data.name !== currentDevice.name ||
+        (data.name && data.name !== currentDevice.name) ||
         (data.latitude !== undefined && data.latitude !== currentDevice.latitude) ||
         (data.longitude !== undefined && data.longitude !== currentDevice.longitude)
       ) {
@@ -255,7 +113,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
 
       return prev;
     });
-  }, []);
+  }, [deviceStatuses]);
 
   const fetchDevices = useCallback(async () => {
     if (!apiContext?.token) return;
@@ -334,52 +192,31 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
           return;
         }
         
-        // Handle both array and direct object formats
-        if (Array.isArray(messageData)) {
-          if (messageData.length === 0) {
-            return;
+        // Process messages (both array and direct object formats)
+        const processMessage = (message: any) => {
+          if (typeof message === 'string') {
+            try {
+              message = JSON.parse(message);
+            } catch (parseErr) {
+              console.error('Error parsing message item:', parseErr);
+              return;
+            }
           }
           
-          // Process each item in the array
-          for (let i = 0; i < messageData.length; i++) {
-            let message = messageData[i];
-            
-            // Check if the item needs to be parsed from string
-            if (typeof message === 'string') {
-              try {
-                message = JSON.parse(message);
-              } catch (parseErr) {
-                console.error('Error parsing message item:', parseErr);
-                continue;
-              }
-            }
-            
-            // Process based on message format
-            if (message._id && message.device_id) {
-              // This is the combined device data format
-              handleCombinedData(message);
-            } else if (message._id) {
-              // This is a device state update with the old format
-              handleDeviceStatus(message);
-            } else if (message.device_id) {
-              // This is a metrics update with the old format
-              handleMetricsUpdate(message);
-            } else {
-              console.warn('Unknown message format:', message);
-            }
+          // All messages should have _id
+          if (message?._id) {
+            handleDeviceData(message);
+          } else {
+            console.warn('Invalid message format (missing _id):', message);
+          }
+        };
+        
+        if (Array.isArray(messageData)) {
+          if (messageData.length > 0) {
+            messageData.forEach(processMessage);
           }
         } else if (messageData && typeof messageData === 'object') {
-          // Handle direct object message
-          if (messageData._id && messageData.device_id) {
-            // This is the combined device data format
-            handleCombinedData(messageData);
-          } else if (messageData._id) {
-            handleDeviceStatus(messageData);
-          } else if (messageData.device_id) {
-            handleMetricsUpdate(messageData);
-          } else {
-            console.warn('Unknown message format:', messageData);
-          }
+          processMessage(messageData);
         } else {
           console.warn('Invalid message format:', messageData);
         }
@@ -388,7 +225,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
         console.error('Raw message data:', event.data);
       }
     };
-  }, [apiContext?.token, selectedDevice, fetchDevices, handleDeviceStatus, handleMetricsUpdate, handleCombinedData, connectionLost, addToast]);
+  }, [apiContext?.token, selectedDevice, fetchDevices, handleDeviceData, connectionLost, addToast]);
 
   const disconnectWebSocket = useCallback(() => {
     if (wsRef.current) {
