@@ -125,7 +125,7 @@ export const DeviceDetails = ({ device, deviceStatus }: DeviceDetailsProps) => {
           setExpectedValues({});
           setMismatchCount(0);
         }
-      }, 10000); // 10 second timeout
+      }, 35000); // 10 second timeout
     }
     
     return () => {
