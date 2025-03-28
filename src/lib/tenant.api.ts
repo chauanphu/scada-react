@@ -58,7 +58,7 @@ export const updateTenant = async (token: string, tenantId: string, data: Update
   }
 };
 
-export const deleteTenant = async (token: string, tenantId: string): Promise<void> => {
+export const deleteTenant = async (token: string, tenantId: string | number): Promise<void> => {
   const response = await fetch(`${PUBLIC_API_URL}/tenant/${tenantId}`, {
     method: "DELETE",
     headers: {
