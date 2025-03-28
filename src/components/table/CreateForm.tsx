@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 export type FormField<T> = {
   name: keyof T;
   label: string;
-  type: 'text' | 'checkbox' | 'select' | 'date' | 'textarea' | 'custom';
+  type: 'text' | 'checkbox' | 'select' | 'date' | 'textarea' | 'custom' | 'number';
   required?: boolean;
   options?: { value: string | number; label: string }[]; // For select fields
   renderCustom?: (
@@ -12,6 +12,8 @@ export type FormField<T> = {
     formValues: Partial<T>
   ) => React.ReactNode; // For custom components
   placeholder?: string;
+  min?: number; // For number input
+  max?: number; // For number input
 };
 
 export type CreateFormProps<T> = {
@@ -82,6 +84,20 @@ export function CreateForm<T>({
                 value={values[field.name] as string || ''}
                 onChange={(e) => handleChange(field.name, e.target.value)}
                 placeholder={field.placeholder}
+                className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
+                  isFieldInvalid(field.name, field.required) ? 'border-red-500' : 'border-gray-300'
+                }`}
+              />
+            )}
+            
+            {field.type === 'number' && (
+              <input
+                type="number"
+                value={values[field.name] === undefined ? '' : (values[field.name] as string | number)}
+                onChange={(e) => handleChange(field.name, e.target.value === '' ? '' : Number(e.target.value))}
+                placeholder={field.placeholder}
+                min={field.min !== undefined ? field.min : undefined}
+                max={field.max !== undefined ? field.max : undefined}
                 className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
                   isFieldInvalid(field.name, field.required) ? 'border-red-500' : 'border-gray-300'
                 }`}

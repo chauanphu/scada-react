@@ -1,8 +1,15 @@
 import React, { useState } from 'react';
 import { Table, Column, TableProps } from './Table';
+import { TextInput, NumberInput, DropdownInput, CheckboxInput, DropdownOption } from './form-controls';
+
+export type ColumnType = 'text' | 'number' | 'dropdown' | 'checkbox' | 'custom';
 
 export type EditableColumn<T, K extends object = {}> = Column<T> & {
   editable?: boolean;
+  type?: ColumnType;
+  options?: DropdownOption[];  // For dropdown columns
+  min?: number;  // For number columns
+  max?: number;  // For number columns
   editComponent?: (
     value: any,
     onChange: (value: any) => void,
@@ -138,6 +145,63 @@ export function EditableTable<T extends object, K extends object = Partial<T>>({
     );
   };
 
+  // Render the appropriate edit component based on column type
+  const renderEditComponent = (column: EditableColumn<T, K>, item: T, value: any) => {
+    const accessorKey = column.accessor as string;
+    const currentValue = editData[accessorKey as keyof K] !== undefined 
+      ? editData[accessorKey as keyof K] 
+      : item[accessorKey as keyof T];
+    
+    // Use custom edit component if provided
+    if (column.editComponent) {
+      return column.editComponent(
+        currentValue,
+        (newValue) => setEditData({ ...editData, [accessorKey]: newValue }),
+        item
+      );
+    }
+
+    // Use the appropriate input component based on column type
+    switch (column.type) {
+      case 'number':
+        return (
+          <NumberInput
+            value={currentValue as number}
+            onChange={(newValue) => setEditData({ ...editData, [accessorKey]: newValue })}
+            min={column.min}
+            max={column.max}
+          />
+        );
+      
+      case 'dropdown':
+        return (
+          <DropdownInput
+            value={currentValue as string | number}
+            onChange={(newValue) => setEditData({ ...editData, [accessorKey]: newValue })}
+            options={column.options || []}
+            placeholder={`-- Chọn ${column.header.toLowerCase()} --`}
+          />
+        );
+        
+      case 'checkbox':
+        return (
+          <CheckboxInput
+            checked={Boolean(currentValue)}
+            onChange={(checked) => setEditData({ ...editData, [accessorKey]: checked })}
+          />
+        );
+        
+      case 'text':
+      default:
+        return (
+          <TextInput
+            value={String(currentValue || '')}
+            onChange={(newValue) => setEditData({ ...editData, [accessorKey]: newValue })}
+          />
+        );
+    }
+  };
+
   // Modify columns for editing
   const processedColumns: Column<T>[] = columns.map(column => {
     if (!column.editable) return column;
@@ -149,36 +213,7 @@ export function EditableTable<T extends object, K extends object = Partial<T>>({
         const isEditing = editingId === id;
 
         if (isEditing) {
-          if (column.editComponent && typeof column.accessor === 'string') {
-            const accessorKey = column.accessor as string;
-            return column.editComponent(
-              editData[accessorKey as keyof K] !== undefined 
-                ? editData[accessorKey as keyof K] 
-                : item[accessorKey as keyof T],
-              (value) => setEditData({ ...editData, [accessorKey]: value }),
-              item
-            );
-          }
-
-          // Default edit component for text
-          if (typeof column.accessor === 'string') {
-            const accessorKey = column.accessor as string;
-            return (
-              <input
-                type="text"
-                className="w-full p-1 border rounded"
-                value={
-                  editData[accessorKey as keyof K] !== undefined
-                    ? String(editData[accessorKey as keyof K] || '')
-                    : String(item[accessorKey as keyof T] || '')
-                }
-                onChange={(e) =>
-                  setEditData({ ...editData, [accessorKey]: e.target.value })
-                }
-                onClick={(e) => e.stopPropagation()}
-              />
-            );
-          }
+          return renderEditComponent(column, item, null);
         }
 
         return column.cell 
