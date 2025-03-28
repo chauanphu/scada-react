@@ -82,12 +82,6 @@ export const AlertPage = (): JSX.Element => {
                                             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                 Mức độ
                                             </th>
-                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Được giải quyết vào lúc
-                                            </th>
-                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Bởi
-                                            </th>
                                         </tr>
                                     </thead>
                                     <tbody className="bg-white divide-y divide-gray-200">
@@ -105,12 +99,6 @@ export const AlertPage = (): JSX.Element => {
                                                     </td>
                                                     <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
                                                         {alert.severity}
-                                                    </td>
-                                                    <td className="px-4 py-4 text-sm text-gray-500">
-                                                        {alert.resolved_time || "-"}
-                                                    </td>
-                                                    <td className="px-4 py-4 text-sm text-gray-500">
-                                                        {alert.resolve_by || "-"}
                                                     </td>
                                                 </tr>
                                             ))

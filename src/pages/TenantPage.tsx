@@ -9,199 +9,195 @@ import {
   deleteTenant,
 } from "../lib/tenant.api";
 import { useAPI } from "../contexts/APIProvider";
+import { EditableTable, CreateForm, CardView, FormField } from "../components/table";
+import { useToast } from "../hooks/use-toast";
 
 export const TenantPage: React.FC = () => {
   const { token } = useAPI();
+  const { toast } = useToast();
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
   const [creating, setCreating] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editData, setEditData] = useState<UpdateTenantData>({
-    name: "",
-    disabled: false,
-  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isMobileView, setIsMobileView] = useState(window.innerWidth < 768);
 
+  // Initial tenant form data
   const [newTenant, setNewTenant] = useState<CreateTenantData>({
     name: "",
     disabled: false,
   });
 
+  // Form fields for the creation form
+  const tenantFields: FormField<CreateTenantData>[] = [
+    {
+      name: "name",
+      label: "Tên khách hàng",
+      type: "text",
+      required: true,
+      placeholder: "Nhập tên khách hàng",
+    },
+    {
+      name: "disabled",
+      label: "Trạng thái",
+      type: "checkbox",
+      placeholder: "Khóa tài khoản",
+    },
+  ];
+
+  // Table columns definition
+  const columns = [
+    {
+      header: "Tên",
+      accessor: "name" as const,
+      sortable: true,
+      editable: true,
+    },
+    {
+      header: "Ngày tạo",
+      accessor: "created_date" as const,
+      sortable: true,
+      editable: false,
+      cell: (tenant: Tenant) => (
+        <div>{new Date(tenant.created_date).toLocaleDateString()}</div>
+      ),
+    },
+    {
+      header: "Trạng thái",
+      accessor: "disabled" as const,
+      sortable: true,
+      editable: true,
+      cell: (tenant: Tenant) => (
+        <span
+          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+            tenant.disabled
+              ? "bg-red-100 text-red-800"
+              : "bg-green-100 text-green-800"
+          }`}
+        >
+          {tenant.disabled ? "Khóa" : "Hoạt động"}
+        </span>
+      ),
+      editComponent: (value: boolean, onChange: (value: boolean) => void) => (
+        <label className="flex items-center space-x-2">
+          <input
+            type="checkbox"
+            checked={value}
+            onChange={(e) => onChange(e.target.checked)}
+            className="rounded text-blue-600"
+          />
+          <span className="text-sm">Khóa tài khoản</span>
+        </label>
+      ),
+    },
+  ];
+
+  // Fetch tenants from API
   const fetchTenants = useCallback(async () => {
     if (!token) return;
     setLoading(true);
-    setError("");
     try {
       const data = await getTenants(token);
       setTenants(data);
     } catch (err) {
       console.error(err);
-      setError("Failed to load tenants.");
+      toast({
+        title: "Lỗi",
+        description: "Không thể tải dữ liệu khách hàng",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, [token, toast]);
 
   useEffect(() => {
     fetchTenants();
   }, [fetchTenants]);
 
-  const handleCreateTenant = async () => {
+  // Handle window resize for responsive view
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobileView(window.innerWidth < 768);
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  }, []);
+
+  // Handle create tenant
+  const handleCreateTenant = async (values: CreateTenantData) => {
     if (!token) return;
-    setLoading(true);
-    setError("");
+    setIsSubmitting(true);
     try {
-      await createTenant(token, newTenant);
+      await createTenant(token, values);
       await fetchTenants();
       setCreating(false);
       setNewTenant({
         name: "",
         disabled: false,
       });
+      toast({
+        title: "Thành công",
+        description: "Đã tạo khách hàng mới",
+      });
     } catch (err) {
       console.error(err);
-      setError("Failed to create tenant.");
+      toast({
+        title: "Lỗi",
+        description: "Không thể tạo khách hàng mới",
+        variant: "destructive",
+      });
     } finally {
-      setLoading(false);
+      setIsSubmitting(false);
     }
   };
-  // Add handleEditTenant function
-  const handleEditTenant = async (tenantId: string) => {
+
+  // Handle edit tenant
+  const handleEditTenant = async (id: string, data: Partial<UpdateTenantData>) => {
     if (!token) return;
-    setLoading(true);
-    setError("");
     try {
-      await updateTenant(token, tenantId, editData);
+      await updateTenant(token, id, data as UpdateTenantData);
       setTenants(
         tenants.map((tenant) =>
-          tenant._id === tenantId ? { ...tenant, ...editData } : tenant
+          tenant._id === id ? { ...tenant, ...data } : tenant
         )
       );
-      setEditingId(null);
+      toast({
+        title: "Thành công",
+        description: "Đã cập nhật thông tin khách hàng",
+      });
     } catch (err) {
       console.error(err);
-      setError("Failed to update tenant.");
-    } finally {
-      setLoading(false);
+      toast({
+        title: "Lỗi",
+        description: "Không thể cập nhật thông tin khách hàng",
+        variant: "destructive",
+      });
+      throw err; // Rethrow to let the EditableTable know it failed
     }
   };
-  const handleConfirmDelete = () => {
-    return window.confirm("Are you sure you want to delete this tenant?");
-  };
 
-  const handleDeleteTenant = async (tenantId: string) => {
-    if (!handleConfirmDelete()) return;
-
-    setLoading(true);
-    setError("");
+  // Handle delete tenant
+  const handleDeleteTenant = async (id: string | number) => {
+    if (!token) return;
     try {
-      await deleteTenant(token || "", tenantId);
-      setTenants(tenants.filter((tenant) => tenant._id !== tenantId));
+      await deleteTenant(token, id);
+      setTenants(tenants.filter((tenant) => tenant._id !== id));
+      toast({
+        title: "Thành công",
+        description: "Đã xóa khách hàng",
+      });
     } catch (err) {
       console.error(err);
-      setError("Failed to delete tenant.");
-    } finally {
-      setLoading(false);
+      toast({
+        title: "Lỗi",
+        description: "Không thể xóa khách hàng",
+        variant: "destructive",
+      });
+      throw err; // Rethrow to let the EditableTable know it failed
     }
-  };
-
-  // Update the table row rendering
-  const TenantRow: React.FC<{ tenant: Tenant }> = ({ tenant }) => {
-    const isEditing = editingId === tenant._id;
-
-    return (
-      <tr key={tenant._id}>
-        <td className="px-4 py-4">
-          {isEditing ? (
-            <input
-              type="text"
-              value={editData.name}
-              onChange={(e) =>
-                setEditData({ ...editData, name: e.target.value })
-              }
-              className="w-full p-1 border rounded"
-            />
-          ) : (
-            <div className="font-medium">{tenant.name}</div>
-          )}
-        </td>
-        <td className="px-4 py-4">
-          {new Date(tenant.created_date).toLocaleDateString()}
-        </td>
-        <td className="px-4 py-4">
-          {isEditing ? (
-            <label className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                checked={editData.disabled}
-                onChange={(e) =>
-                  setEditData({ ...editData, disabled: e.target.checked })
-                }
-                className="rounded text-blue-600"
-              />
-              <span className="text-sm">Khóa tài khoản</span>
-            </label>
-          ) : (
-            <span
-              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                tenant.disabled
-                  ? "bg-red-100 text-red-800"
-                  : "bg-green-100 text-green-800"
-              }`}
-            >
-              {tenant.disabled ? "Disabled" : "Active"}
-            </span>
-          )}
-        </td>
-        <td className="px-4 py-4 flex items-center space-x-2">
-          {isEditing ? (
-            <>
-              <button
-                onClick={() => handleEditTenant(tenant._id)}
-                className="text-green-600 hover:text-green-800"
-                disabled={loading || !editData.name}
-              >
-                {loading ? (
-                  <div className="h-4 w-4 border-2 border-green-600 border-t-transparent rounded-full animate-spin"></div>
-                ) : (
-                  "Lưu thay đổi"
-                )}
-              </button>
-              <button
-                onClick={() => {
-                  setEditingId(null);
-                  setEditData({ name: "", disabled: false });
-                }}
-                className="text-gray-600 hover:text-gray-800"
-              >
-                Hủy bỏ
-              </button>
-            </>
-          ) : (
-            <>
-              <button
-                onClick={() => {
-                  setEditingId(tenant._id);
-                  setEditData({
-                    name: tenant.name,
-                    disabled: tenant.disabled,
-                  });
-                }}
-                className="text-blue-600 hover:text-blue-800"
-              >
-                Chỉnh sửa
-              </button>
-              <button
-                onClick={() => handleDeleteTenant(tenant._id)}
-                className="text-red-600 hover:text-red-800"
-              >
-                Xóa
-              </button>
-            </>
-          )}
-        </td>
-      </tr>
-    );
   };
 
   return (
@@ -218,110 +214,77 @@ export const TenantPage: React.FC = () => {
           </button>
         </div>
 
-        {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg mb-6">
-            {error}
-          </div>
-        )}
-
         {creating && (
-          <div className="bg-white shadow-lg rounded-xl mb-6 p-4 md:p-6">
-            <h2 className="text-xl font-semibold mb-4">Tạo khách hàng mới</h2>
-            <div className="grid grid-cols-1 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Tên khách hàng *
-                </label>
-                <input
-                  type="text"
-                  value={newTenant.name}
-                  onChange={(e) =>
-                    setNewTenant({ ...newTenant, name: e.target.value })
-                  }
-                  className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                  placeholder="Nhập tên khách hàng"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    checked={newTenant.disabled}
-                    onChange={(e) =>
-                      setNewTenant({ ...newTenant, disabled: e.target.checked })
-                    }
-                    className="rounded text-blue-600"
-                  />
-                  <span className="text-sm">Khóa tài khoản</span>
-                </label>
-              </div>
-            </div>
-
-            <div className="mt-6 flex flex-col-reverse md:flex-row gap-3 md:justify-end">
-              <button
-                onClick={() => setCreating(false)}
-                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleCreateTenant}
-                disabled={!newTenant.name || loading}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center"
-              >
-                {loading ? (
-                  <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                ) : (
-                  "Create Tenant"
-                )}
-              </button>
-            </div>
-          </div>
+          <CreateForm
+            fields={tenantFields}
+            initialValues={newTenant}
+            onSubmit={handleCreateTenant}
+            onCancel={() => setCreating(false)}
+            title="Tạo khách hàng mới"
+            submitLabel="Tạo khách hàng"
+            isSubmitting={isSubmitting}
+          />
         )}
 
-        {/* Tenant Table */}
+        {/* Responsive display - Table for desktop, Cards for mobile */}
         <div className="bg-white shadow-lg rounded-xl overflow-hidden">
           <div className="px-4 py-5 sm:p-6">
-            <h3 className="text-lg font-semibold">Danh sách khách hàng</h3>
-            {loading ? (
-              <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
-              </div>
-            ) : tenants.length === 0 ? (
-              <div className="text-center text-gray-500 py-8">
-                Không tìm thấy khách hàng
-              </div>
-            ) : (
-              <div className="overflow-x-auto mt-4">
-                <table className="w-full min-w-[800px]">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">
-                        Tên
-                      </th>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">
-                        Ngày tạo
-                      </th>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">
-                        Trạng thái
-                      </th>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">
-                        Hành động
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                    {tenants.map((tenant) => (
-                      <TenantRow key={tenant._id} tenant={tenant} />
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+            <h3 className="text-lg font-semibold mb-4">Danh sách khách hàng</h3>
+            
+            {/* Desktop view */}
+            {!isMobileView && (
+              <EditableTable
+                data={tenants}
+                columns={columns}
+                isLoading={loading}
+                keyExtractor={(tenant) => tenant._id}
+                onEdit={(id, data) => handleEditTenant(id as string, data)}
+                onDelete={handleDeleteTenant}
+                idField="_id"
+              />
+            )}
+
+            {/* Mobile view */}
+            {isMobileView && (
+              <CardView
+                data={tenants}
+                columns={columns}
+                isLoading={loading}
+                keyExtractor={(tenant) => tenant._id}
+                onCardClick={(tenant) => {
+                  // You could implement opening a modal for editing
+                  // or navigate to a details page
+                  console.log("Card clicked:", tenant);
+                }}
+                actions={(tenant) => (
+                  <div className="flex space-x-2 justify-end">
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        // Implement edit action for mobile, perhaps open a modal
+                      }}
+                      className="text-blue-600 hover:text-blue-800"
+                    >
+                      Sửa
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (window.confirm("Bạn có chắc chắn muốn xóa khách hàng này?")) {
+                          handleDeleteTenant(tenant._id);
+                        }
+                      }}
+                      className="text-red-600 hover:text-red-800"
+                    >
+                      Xóa
+                    </button>
+                  </div>
+                )}
+              />
             )}
           </div>
         </div>
       </div>
     </div>
   );
-};
+}
