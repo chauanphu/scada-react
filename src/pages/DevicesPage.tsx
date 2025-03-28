@@ -9,7 +9,7 @@ import {
   UserRole,
 } from "../lib/api";
 import { useAPI } from "../contexts/APIProvider";
-import { EditableTable, CreateForm, CardView, FormField } from "../components/table";
+import { EditableTable, CreateForm, CardView, FormField, EditableColumn, EditForm } from "../components/table";
 import { useToast } from "../hooks/use-toast";
 import { Tenant, getTenants as apiGetTenants } from "../lib/tenant.api";
 
@@ -22,6 +22,8 @@ export const DevicesPage: React.FC = () => {
   const [creating, setCreating] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isMobileView, setIsMobileView] = useState(window.innerWidth < 768);
+  const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
+  const [editing, setEditing] = useState(false);
 
   // Determine if current user is admin or superadmin
   const isSuperAdmin = userRole === UserRole.SUPERADMIN;
@@ -112,7 +114,7 @@ export const DevicesPage: React.FC = () => {
       label: "Địa chỉ MAC",
       type: "text",
       required: true,
-      placeholder: "Nhập địa chỉ MAC (XX:XX:XX:XX:XX:XX)",
+      placeholder: "Nhập địa chỉ MAC",
     },
     {
       name: "hour_on",
@@ -158,9 +160,8 @@ export const DevicesPage: React.FC = () => {
     },
     {
       name: "toggle",
-      label: "Trạng thái",
+      label: "Bật thiết bị",
       type: "checkbox",
-      placeholder: "Bật thiết bị",
     },
   ];
 
@@ -179,18 +180,20 @@ export const DevicesPage: React.FC = () => {
   }
 
   // Table columns definition - based on user role
-  const columns = [
+  const columns: EditableColumn<Device>[] = [
     {
       header: "Tên thiết bị",
       accessor: "name" as keyof Device,
       sortable: true,
       editable: isAdmin,
+      type: "text"
     },
     {
       header: "Địa chỉ MAC",
       accessor: "mac" as keyof Device,
       sortable: true,
       editable: isAdmin,
+      type: "text"
     },
   ];
 
@@ -201,24 +204,20 @@ export const DevicesPage: React.FC = () => {
       accessor: "tenant_id" as keyof Device,
       sortable: true,
       editable: true,
-      // Add custom renderer and editor for tenant column
-      render: (value: string) => getTenantName(value),
-      editComponent: (value: string, onChange: (value: string) => void) => (
-        <select
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="w-full p-2 border rounded focus:ring-blue-500 focus:border-blue-500"
-        >
-          <option value="">-- Chọn khách hàng --</option>
-          {tenants.map((tenant) => (
-            <option key={tenant._id} value={tenant._id}>
-              {tenant.name}
-            </option>
-          ))}
-        </select>
-      ),
+      type: "dropdown",
+      options: tenants.map((tenant) => ({
+        value: tenant._id,
+        label: tenant.name,
+      })),
+      cell: (item: Device) => getTenantName(item.tenant_id),
     });
   }
+
+  // Device edit fields - reusing the same structure as create fields
+  const deviceEditFields: FormField<Device>[] = deviceFields.map(field => ({
+    ...field,
+    name: field.name as keyof Device
+  }));
 
   // Handle create device
   const handleCreateDevice = async (values: CreateDeviceData) => {
@@ -301,6 +300,45 @@ export const DevicesPage: React.FC = () => {
     }
   };
 
+  // Handle edit device for mobile view
+  const handleOpenEditForm = (device: Device) => {
+    setSelectedDevice(device);
+    setEditing(true);
+  };
+
+  const handleCloseEditForm = () => {
+    setSelectedDevice(null);
+    setEditing(false);
+  };
+
+  const handleSubmitEditForm = async (updatedDevice: Device) => {
+    if (!selectedDevice || !token) return;
+
+    try {
+      // Extract only the fields that have changed
+      const updatedFields: Partial<CreateDeviceData> = {};
+      Object.keys(updatedDevice).forEach((key) => {
+        const typedKey = key as keyof Device;
+        if (
+          selectedDevice[typedKey] !== updatedDevice[typedKey] && 
+          typedKey !== '_id'
+        ) {
+          updatedFields[typedKey as keyof CreateDeviceData] = updatedDevice[typedKey];
+        }
+      });
+
+      if (Object.keys(updatedFields).length > 0) {
+        await handleEditDevice(selectedDevice._id, updatedFields);
+      }
+
+      setEditing(false);
+      setSelectedDevice(null);
+    } catch (err) {
+      console.error(err);
+      // Error handled in handleEditDevice
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 p-4">
       <div className="max-w-7xl mx-auto">
@@ -355,10 +393,7 @@ export const DevicesPage: React.FC = () => {
                 columns={columns}
                 isLoading={loading}
                 keyExtractor={(device) => device._id}
-                onCardClick={(device) => {
-                  // In a real application, implement opening a modal for viewing/editing
-                  console.log("Card clicked:", device);
-                }}
+                onCardClick={isAdmin ? handleOpenEditForm : undefined}
                 actions={(device) => (
                   <div className="flex space-x-2 justify-end">
                     {isAdmin && (
@@ -366,8 +401,7 @@ export const DevicesPage: React.FC = () => {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            // Should implement mobile edit UX here
-                            console.log("Edit clicked:", device);
+                            handleOpenEditForm(device);
                           }}
                           className="text-blue-600 hover:text-blue-800"
                         >
@@ -388,6 +422,19 @@ export const DevicesPage: React.FC = () => {
                     )}
                   </div>
                 )}
+              />
+            )}
+
+            {/* Edit Form Modal for mobile view */}
+            {editing && selectedDevice && (
+              <EditForm
+                title={`Chỉnh sửa thiết bị: ${selectedDevice.name}`}
+                fields={deviceEditFields}
+                initialValues={selectedDevice}
+                onSubmit={handleSubmitEditForm}
+                onCancel={handleCloseEditForm}
+                isSubmitting={isSubmitting}
+                submitLabel="Cập nhật"
               />
             )}
           </div>
