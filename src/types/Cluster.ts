@@ -1,3 +1,19 @@
+export interface Device {
+  _id: string;
+  name: string;
+  mac?: string;
+  tenant_id?: string;
+  created_at?: string;
+  updated_at?: string;
+  latitude?: number;
+  longitude?: number;
+  auto?: boolean;
+  hour_on?: number;
+  hour_off?: number;
+  minute_on?: number;
+  minute_off?: number;
+}
+
 export interface DeviceStatus {
   is_connected: boolean;
   mac: string;

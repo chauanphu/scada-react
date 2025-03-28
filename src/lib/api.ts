@@ -46,6 +46,7 @@ export type TokenResponse = {
   tenant_id?: string;
 };
 
+
 // Re-export the types
 export type { Device, DeviceStatus, Schedule, CreateDeviceData };
 
@@ -647,6 +648,26 @@ export async function getLatestFirmware(token: string): Promise<FirmwareMetadata
   }
 }
 
+// Get all firmware metadata
+export async function getAllMetadata(token: string): Promise<FirmwareMetadata[]> {
+  const response = await fetch(`${PUBLIC_API_URL}/firmware/metadata/`, {
+    headers: {
+      accept: "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  try {
+    if (!response.ok) {
+      throw new Error("Không thể tải danh sách firmware");
+    }
+
+    return response.json();
+  } catch (error) {
+    throw new Error("Lỗi khi tải danh sách firmware: " + (error as Error).message);
+  }
+}
+
 // Upload new firmware
 export async function uploadFirmware(
   token: string,
@@ -672,6 +693,28 @@ export async function uploadFirmware(
     return response.json();
   } catch (error) {
     throw new Error("Lỗi khi tải lên firmware: " + (error as Error).message);
+  }
+}
+
+// Delete firmware by version
+export async function deleteFirmware(
+  token: string,
+  version: string
+): Promise<void> {
+  const response = await fetch(`${PUBLIC_API_URL}/firmware/${version}/`, {
+    method: "DELETE",
+    headers: {
+      accept: "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  try {
+    if (!response.ok) {
+      throw new Error("Không thể xóa firmware");
+    }
+  } catch (error) {
+    throw new Error("Lỗi khi xóa firmware: " + (error as Error).message);
   }
 }
 

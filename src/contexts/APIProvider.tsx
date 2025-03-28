@@ -28,6 +28,7 @@ import {
   CreateDeviceData,
   FirmwareMetadata,
   getLatestFirmware,
+  getAllMetadata,
   uploadFirmware,
   updateDeviceFirmware,
   massUpdateFirmware,
@@ -35,6 +36,7 @@ import {
   setDeviceAuto,
   setDeviceSchedule,
   Schedule,
+  deleteFirmware as apiDeleteFirmware,
 } from "../lib/api";
 import { useNavigate } from "react-router-dom";
 import Cookies from "js-cookie";
@@ -86,9 +88,11 @@ interface APIContextType {
   downloadCSVAudit: () => Promise<any>;
   // Firmware operations
   getLatestFirmware: () => Promise<FirmwareMetadata>;
+  getAllFirmwareMetadata: () => Promise<FirmwareMetadata[]>;
   uploadFirmware: (version: string, file: File) => Promise<FirmwareMetadata>;
   updateDeviceFirmware: (deviceId: string, version: string) => Promise<void>;
   massUpdateFirmware: (version: string) => Promise<void>;
+  deleteFirmware: (version: string) => Promise<void>;
 }
 
 const APIContext = createContext<APIContextType | undefined>(undefined);
@@ -197,12 +201,15 @@ export function APIProvider({ children }: { children: ReactNode }) {
     downloadCSVAudit: () => downloadCSVAudit(token || ""),
     // Firmware functions
     getLatestFirmware: () => getLatestFirmware(token || ""),
+    getAllFirmwareMetadata: () => getAllMetadata(token || ""),
     uploadFirmware: (version: string, file: File) =>
       uploadFirmware(token || "", version, file),
     updateDeviceFirmware: (deviceId: string, version: string) =>
       updateDeviceFirmware(token || "", deviceId, version),
     massUpdateFirmware: (version: string) =>
       massUpdateFirmware(token || "", version),
+    deleteFirmware: (version: string) => 
+      apiDeleteFirmware(token || "", version),
   };
 
   return <APIContext.Provider value={value}>{children}</APIContext.Provider>;

@@ -5,6 +5,36 @@ import { useToast } from "../hooks/use-toast";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../components/ui/select";
+
+// Utility function for formatting dates
+const formatLocalDate = (dateString: string | Date): string => {
+  const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
+  
+  // Get the timezone offset in hours
+  const offsetMilliseconds = date.getTimezoneOffset() * 60 * 1000;
+  // Adjust the date object to the local timezone
+  date.setTime(date.getTime() - offsetMilliseconds);
+
+  // Format the date string in the local timezone
+  const formattedDate = date.toLocaleString('vi-VN', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  });
+  
+  return `${formattedDate}`;
+};
 
 export const FirmwarePage = () => {
   const apiContext = useAPI();
@@ -16,6 +46,7 @@ export const FirmwarePage = () => {
   const [loading, setLoading] = useState(false);
   const [latestFirmware, setLatestFirmware] = useState<FirmwareMetadata | null>(null);
   const [updateType, setUpdateType] = useState<"selected" | "all">("selected");
+  const [allFirmware, setAllFirmware] = useState<FirmwareMetadata[]>([]);
 
   const fetchDevices = useCallback(async () => {
     try {
@@ -43,10 +74,24 @@ export const FirmwarePage = () => {
     }
   }, [apiContext, toast]);
 
+  const fetchAllFirmware = useCallback(async () => {
+    try {
+      const firmwareList = await apiContext.getAllFirmwareMetadata();
+      setAllFirmware(firmwareList);
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Lỗi",
+        description: "Không thể tải danh sách firmware" + error
+      });
+    }
+  }, [apiContext, toast]);
+
   useEffect(() => {
     void fetchDevices();
     void fetchLatestFirmware();
-  }, [fetchDevices, fetchLatestFirmware]);
+    void fetchAllFirmware();
+  }, [fetchDevices, fetchLatestFirmware, fetchAllFirmware]);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -57,6 +102,10 @@ export const FirmwarePage = () => {
 
   const handleVersionChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setFirmwareVersion(event.target.value);
+  };
+
+  const handleVersionSelectChange = (value: string) => {
+    setFirmwareVersion(value);
   };
 
   const handleSelectAll = () => {
@@ -93,6 +142,7 @@ export const FirmwarePage = () => {
         description: "Tải lên firmware thành công"
       });
       void fetchLatestFirmware();
+      void fetchAllFirmware();
     } catch (error) {
       toast({
         variant: "destructive",
@@ -153,6 +203,31 @@ export const FirmwarePage = () => {
     }
   };
 
+  const handleDeleteFirmware = async (version: string) => {
+    if (!window.confirm(`Bạn có chắc chắn muốn xóa firmware phiên bản ${version}? Hành động này không thể hoàn tác.`)) {
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await apiContext.deleteFirmware(version);
+      toast({
+        title: "Thành công",
+        description: `Đã xóa firmware phiên bản ${version}`
+      });
+      void fetchLatestFirmware();
+      void fetchAllFirmware();
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Lỗi",
+        description: "Không thể xóa firmware: " + error
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 p-4">
       <div className="max-w-7xl mx-auto">
@@ -165,11 +240,50 @@ export const FirmwarePage = () => {
               <p>Phiên bản: {latestFirmware.version}</p>
               <p>
                 Ngày tải lên:{" "}
-                {new Date(latestFirmware.upload_time).toLocaleString()}
+                {formatLocalDate(latestFirmware.upload_time)}
               </p>
             </div>
           ) : (
             <p>Chưa có thông tin firmware</p>
+          )}
+        </div>
+
+        <div className="bg-white shadow rounded-lg p-6 mb-6">
+          <h2 className="text-xl font-semibold mb-4">Danh sách firmware</h2>
+          {allFirmware.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phiên bản</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ngày tải lên</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {allFirmware.map((firmware, index) => (
+                    <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{firmware.version}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {formatLocalDate(firmware.upload_time)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <Button 
+                          variant="destructive" 
+                          size="sm"
+                          onClick={() => handleDeleteFirmware(firmware.version)}
+                          disabled={loading}
+                        >
+                          Xóa
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p>Chưa có firmware nào được tải lên</p>
           )}
         </div>
 
@@ -208,7 +322,6 @@ export const FirmwarePage = () => {
 
           <div className="space-y-4 mb-6">
             <div>
-              <Label className="mb-2">Loại cập nhật</Label>
               <div className="flex space-x-4">
                 <label className="inline-flex items-center">
                   <input
@@ -285,12 +398,30 @@ export const FirmwarePage = () => {
 
             <div className="space-y-2">
               <Label>Phiên bản mục tiêu</Label>
-              <Input
-                type="text"
-                value={firmwareVersion}
-                onChange={handleVersionChange}
-                placeholder="VD: 1.0.0"
-              />
+              {allFirmware.length > 0 ? (
+                <Select 
+                  value={firmwareVersion} 
+                  onValueChange={handleVersionSelectChange}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Chọn phiên bản firmware" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {allFirmware.map((firmware) => (
+                      <SelectItem key={firmware.version} value={firmware.version}>
+                        {firmware.version} - {formatLocalDate(firmware.upload_time).split(',')[0]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Input
+                  type="text"
+                  value={firmwareVersion}
+                  onChange={handleVersionChange}
+                  placeholder="VD: 1.0.0"
+                />
+              )}
             </div>
 
             <Button
