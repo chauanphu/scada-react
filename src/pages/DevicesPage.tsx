@@ -2,24 +2,33 @@ import { useState, useEffect, useCallback } from "react";
 import {
   Device,
   CreateDeviceData,
-  getDevices,
-  createDevice,
-  deleteDevice,
-  updateDevice,
+  getDevices as apiGetDevices,
+  createDevice as apiCreateDevice,
+  deleteDevice as apiDeleteDevice,
+  updateDevice as apiUpdateDevice,
   UserRole,
-} from "../lib/api"; // Add UserRole
+} from "../lib/api";
 import { useAPI } from "../contexts/APIProvider";
-import { Tenant, getTenants } from "../lib/tenant.api";
+import { EditableTable, CreateForm, CardView, FormField } from "../components/table";
+import { useToast } from "../hooks/use-toast";
+import { Tenant, getTenants as apiGetTenants } from "../lib/tenant.api";
 
 export const DevicesPage: React.FC = () => {
-  const apiContext = useAPI();
-  const { token, userRole } = useAPI(); // Get userRole from API context
+  const { token, userRole, tenantId } = useAPI();
+  const { toast } = useToast();
   const [devices, setDevices] = useState<Device[]>([]);
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
   const [creating, setCreating] = useState(false);
-  const [editingDeviceId, setEditingDeviceId] = useState<string | null>(null); // Track which device is being edited
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isMobileView, setIsMobileView] = useState(window.innerWidth < 768);
+
+  // Determine if current user is admin or superadmin
+  const isSuperAdmin = userRole === UserRole.SUPERADMIN;
+  const isAdmin = userRole === UserRole.ADMIN || userRole === UserRole.SUPERADMIN;
+  const isTenant = userRole === UserRole.SUPERADMIN || userRole === UserRole.OPERATOR;
+
+  // Initial device form data
   const [newDevice, setNewDevice] = useState<CreateDeviceData>({
     name: "",
     mac: "",
@@ -29,52 +38,195 @@ export const DevicesPage: React.FC = () => {
     minute_off: 0,
     auto: false,
     toggle: false,
-    tenant_id: "",
+    tenant_id: isTenant ? tenantId || "" : "",
   });
 
-  // Check if user has admin permissions
-  const hasAdminPermissions = userRole === UserRole.ADMIN || userRole === UserRole.SUPERADMIN;
-  const isSuperAdmin = userRole === UserRole.SUPERADMIN;
-  // Fetch devices
-  const fetchDevices = useCallback(async () => {
+  // Create a mapping of tenant IDs to tenant names for easy lookup
+  const tenantMap = useCallback(() => {
+    const map: { [key: string]: string } = {};
+    tenants.forEach((tenant) => {
+      map[tenant._id] = tenant.name;
+    });
+    return map;
+  }, [tenants]);
+
+  // Get tenant name from ID
+  const getTenantName = useCallback((tenantId?: string) => {
+    if (!tenantId) return "—";
+    return tenantMap()[tenantId] || tenantId;
+  }, [tenantMap]);
+
+  // Fetch devices and tenants
+  const fetchData = useCallback(async () => {
     if (!token) return;
     setLoading(true);
-    setError("");
     try {
-      const data = await getDevices(token);
-      setDevices(data);
+      // Get devices from API
+      const devicesData = await apiGetDevices(token);
+      setDevices(devicesData);
+
+      // Only fetch tenants for admin/superadmin users
+      if (isAdmin) {
+        const tenantsData = await apiGetTenants(token);
+        setTenants(tenantsData);
+      }
     } catch (err) {
       console.error(err);
-      setError("Lỗi khi tải danh sách thiết bị.");
+      toast({
+        title: "Lỗi",
+        description: "Không thể tải dữ liệu thiết bị",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
-  }, [token]);
-
-  // Fetch tenants
-  const fetchTenants = useCallback(async () => {
-    if (!token) return;
-    try {
-      const data = await getTenants(token);
-      setTenants(data);
-    } catch (err) {
-      console.error("Không có quyền truy cập danh sách khách hàng");
-      // setError("Lỗi khi tải danh sách khách hàng.");
-    }
-  }, [token]);
+  }, [token, toast, isAdmin]);
 
   useEffect(() => {
-    fetchDevices();
-    if (isSuperAdmin) fetchTenants();
-  }, [fetchDevices, fetchTenants]);
+    fetchData();
+  }, [fetchData]);
 
-  const handleCreateDevice = async () => {
-    if (!token || !newDevice.tenant_id) return;
-    setLoading(true);
-    setError("");
+  // Handle window resize for responsive view
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobileView(window.innerWidth < 768);
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  }, []);
+
+  // Form fields for the creation form - all required fields from spec
+  const deviceFields: FormField<CreateDeviceData>[] = [
+    {
+      name: "name",
+      label: "Tên thiết bị",
+      type: "text",
+      required: true,
+      placeholder: "Nhập tên thiết bị",
+    },
+    {
+      name: "mac",
+      label: "Địa chỉ MAC",
+      type: "text",
+      required: true,
+      placeholder: "Nhập địa chỉ MAC (XX:XX:XX:XX:XX:XX)",
+    },
+    {
+      name: "hour_on",
+      label: "Giờ bật",
+      type: "number",
+      required: true,
+      min: 0,
+      max: 23,
+      placeholder: "0-23",
+    },
+    {
+      name: "minute_on",
+      label: "Phút bật",
+      type: "number",
+      required: true,
+      min: 0,
+      max: 59,
+      placeholder: "0-59",
+    },
+    {
+      name: "hour_off",
+      label: "Giờ tắt",
+      type: "number",
+      required: true,
+      min: 0,
+      max: 23,
+      placeholder: "0-23",
+    },
+    {
+      name: "minute_off",
+      label: "Phút tắt",
+      type: "number",
+      required: true,
+      min: 0,
+      max: 59,
+      placeholder: "0-59",
+    },
+    {
+      name: "auto",
+      label: "Tự động",
+      type: "checkbox",
+      placeholder: "Bật chế độ tự động",
+    },
+    {
+      name: "toggle",
+      label: "Trạng thái",
+      type: "checkbox",
+      placeholder: "Bật thiết bị",
+    },
+  ];
+
+  // Only show tenant selection for admin/superadmin
+  if (isSuperAdmin) {
+    deviceFields.push({
+      name: "tenant_id",
+      label: "Khách hàng",
+      type: "select",
+      required: true,
+      options: tenants.map((tenant) => ({
+        value: tenant._id,
+        label: tenant.name,
+      })),
+    });
+  }
+
+  // Table columns definition - based on user role
+  const columns = [
+    {
+      header: "Tên thiết bị",
+      accessor: "name" as keyof Device,
+      sortable: true,
+      editable: isAdmin,
+    },
+    {
+      header: "Địa chỉ MAC",
+      accessor: "mac" as keyof Device,
+      sortable: true,
+      editable: isAdmin,
+    },
+  ];
+
+  // Only show tenant column for admin/superadmin users
+  if (isSuperAdmin) {
+    columns.push({
+      header: "Khách hàng",
+      accessor: "tenant_id" as keyof Device,
+      sortable: true,
+      editable: true,
+      // Add custom renderer and editor for tenant column
+      render: (value: string) => getTenantName(value),
+      editComponent: (value: string, onChange: (value: string) => void) => (
+        <select
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="w-full p-2 border rounded focus:ring-blue-500 focus:border-blue-500"
+        >
+          <option value="">-- Chọn khách hàng --</option>
+          {tenants.map((tenant) => (
+            <option key={tenant._id} value={tenant._id}>
+              {tenant.name}
+            </option>
+          ))}
+        </select>
+      ),
+    });
+  }
+
+  // Handle create device
+  const handleCreateDevice = async (values: CreateDeviceData) => {
+    if (!token) return;
+    setIsSubmitting(true);
     try {
-      await createDevice(token, newDevice);
-      await fetchDevices();
+      await apiCreateDevice(token, values);
+      await fetchData();
       setCreating(false);
       setNewDevice({
         name: "",
@@ -85,91 +237,67 @@ export const DevicesPage: React.FC = () => {
         minute_off: 0,
         auto: false,
         toggle: false,
-        tenant_id: "",
+        tenant_id: isTenant ? tenantId || "" : "",
+      });
+      toast({
+        title: "Thành công",
+        description: "Đã tạo thiết bị mới",
       });
     } catch (err) {
       console.error(err);
-      setError("Lỗi khi tạo thiết bị mới.");
+      toast({
+        title: "Lỗi",
+        description: "Không thể tạo thiết bị mới",
+        variant: "destructive",
+      });
     } finally {
-      setLoading(false);
+      setIsSubmitting(false);
     }
   };
 
-  const handleEditDevice = (device: Device) => {
-    setEditingDeviceId(device._id);
-    setNewDevice({
-      name: device.name,
-      mac: device.mac,
-      hour_on: device.hour_on,
-      hour_off: device.hour_off,
-      minute_on: device.minute_on,
-      minute_off: device.minute_off,
-      auto: device.auto || false,
-      toggle: false,
-      tenant_id: device.tenant_id,
-    });
-  };
-
-  const handleUpdateDevice = async () => {
-    if (!token || !editingDeviceId) return;
-    setLoading(true);
-    setError("");
+  // Handle edit device
+  const handleEditDevice = async (id: string, data: Partial<CreateDeviceData>) => {
+    if (!token) return;
     try {
-      await updateDevice(token, editingDeviceId, newDevice);
-      await fetchDevices();
-      setEditingDeviceId(null);
-      setNewDevice({
-        name: "",
-        mac: "",
-        hour_on: 0,
-        hour_off: 0,
-        minute_on: 0,
-        minute_off: 0,
-        auto: false,
-        toggle: false,
-        tenant_id: "",
+      await apiUpdateDevice(token, id, data);
+      setDevices(
+        devices.map((device) =>
+          device._id === id ? { ...device, ...data } : device
+        )
+      );
+      toast({
+        title: "Thành công",
+        description: "Đã cập nhật thông tin thiết bị",
       });
     } catch (err) {
       console.error(err);
-      setError("Lỗi khi cập nhật thiết bị.");
-    } finally {
-      setLoading(false);
+      toast({
+        title: "Lỗi",
+        description: "Không thể cập nhật thông tin thiết bị",
+        variant: "destructive",
+      });
+      throw err; // Rethrow to let the EditableTable know it failed
     }
   };
 
-  const handleCancelEdit = () => {
-    setEditingDeviceId(null);
-    setNewDevice({
-      name: "",
-      mac: "",
-      hour_on: 0,
-      hour_off: 0,
-      minute_on: 0,
-      minute_off: 0,
-      auto: false,
-      toggle: false,
-      tenant_id: "",
-    });
-  };
-
-  const handleConfirmDelete = () => {
-    return window.confirm("Bạn có chắc chắn muốn xóa thiết bị này?");
-  };
-
-  const handleDeleteDevice = async (deviceId: string) => {
-    if (!handleConfirmDelete()) return;
-
-    setLoading(true);
-    setError("");
+  // Handle delete device
+  const handleDeleteDevice = async (id: string | number) => {
+    if (!token) return;
     try {
-      const token = apiContext?.token || "";
-      await deleteDevice(token, deviceId);
-      setDevices(devices.filter((device) => device._id !== deviceId));
+      await apiDeleteDevice(token, id.toString());
+      setDevices(devices.filter((device) => device._id !== id.toString()));
+      toast({
+        title: "Thành công",
+        description: "Đã xóa thiết bị",
+      });
     } catch (err) {
       console.error(err);
-      setError("Lỗi khi xóa thiết bị.");
-    } finally {
-      setLoading(false);
+      toast({
+        title: "Lỗi",
+        description: "Không thể xóa thiết bị",
+        variant: "destructive",
+      });
+      throw err; // Rethrow to let the EditableTable know it failed
     }
   };
 
@@ -177,295 +305,90 @@ export const DevicesPage: React.FC = () => {
     <div className="min-h-screen bg-gray-100 p-4">
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl md:text-3xl font-bold">Quản Lý Thiết Bị</h1>
-          <button
-            onClick={() => setCreating(!creating)}
-            className={`px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center ${
-              !isSuperAdmin ? "opacity-50 cursor-not-allowed" : ""
-            }`}
-            disabled={!isSuperAdmin}
-          >
-            <span className="hidden md:inline">+ Thêm Thiết Bị</span>
-            <span className="md:hidden">+ Thêm</span>
-          </button>
+          <h1 className="text-2xl md:text-3xl font-bold">Quản lý thiết bị</h1>
+          {isAdmin && (
+            <button
+              onClick={() => setCreating(!creating)}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center"
+            >
+              <span className="hidden md:inline">+ Thêm thiết bị</span>
+              <span className="md:hidden">+ Thêm</span>
+            </button>
+          )}
         </div>
 
-        {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg mb-6">
-            {error}
-          </div>
+        {creating && isAdmin && (
+          <CreateForm
+            fields={deviceFields}
+            initialValues={newDevice}
+            onSubmit={handleCreateDevice}
+            onCancel={() => setCreating(false)}
+            title="Tạo thiết bị mới"
+            submitLabel="Tạo thiết bị"
+            isSubmitting={isSubmitting}
+          />
         )}
 
-        {(creating || editingDeviceId) && (
-          <div className="bg-white shadow-lg rounded-xl mb-6 p-4 md:p-6">
-            <h2 className="text-xl font-semibold mb-4">
-              {editingDeviceId ? "Chỉnh sửa thiết bị" : "Thêm thiết bị mới"}
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Tên thiết bị *
-                </label>
-                <input
-                  type="text"
-                  value={newDevice.name}
-                  onChange={(e) =>
-                    setNewDevice({ ...newDevice, name: e.target.value })
-                  }
-                  className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                  placeholder="Ví dụ: Đèn chiếu sáng 01"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Địa chỉ MAC *
-                </label>
-                <input
-                  type="text"
-                  value={newDevice.mac}
-                  onChange={(e) =>
-                    setNewDevice({ ...newDevice, mac: e.target.value })
-                  }
-                  className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                  placeholder="Ví dụ: 00:1A:2B:3C:4D:5E"
-                />
-              </div>
-
-              <div className="md:col-span-2 grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Thời gian bật
-                  </label>
-                  <div className="flex gap-2">
-                    <input
-                      type="number"
-                      min="0"
-                      max="23"
-                      value={newDevice.hour_on}
-                      onChange={(e) =>
-                        setNewDevice({
-                          ...newDevice,
-                          hour_on: Number(e.target.value),
-                        })
-                      }
-                      className="w-1/2 p-2 border rounded-lg"
-                      placeholder="Giờ"
-                    />
-                    <input
-                      type="number"
-                      min="0"
-                      max="59"
-                      value={newDevice.minute_on}
-                      onChange={(e) =>
-                        setNewDevice({
-                          ...newDevice,
-                          minute_on: Number(e.target.value),
-                        })
-                      }
-                      className="w-1/2 p-2 border rounded-lg"
-                      placeholder="Phút"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Thời gian tắt
-                  </label>
-                  <div className="flex gap-2">
-                    <input
-                      type="number"
-                      min="0"
-                      max="23"
-                      value={newDevice.hour_off}
-                      onChange={(e) =>
-                        setNewDevice({
-                          ...newDevice,
-                          hour_off: Number(e.target.value),
-                        })
-                      }
-                      className="w-1/2 p-2 border rounded-lg"
-                      placeholder="Giờ"
-                    />
-                    <input
-                      type="number"
-                      min="0"
-                      max="59"
-                      value={newDevice.minute_off}
-                      onChange={(e) =>
-                        setNewDevice({
-                          ...newDevice,
-                          minute_off: Number(e.target.value),
-                        })
-                      }
-                      className="w-1/2 p-2 border rounded-lg"
-                      placeholder="Phút"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <label className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    checked={newDevice.auto}
-                    onChange={(e) =>
-                      setNewDevice({ ...newDevice, auto: e.target.checked })
-                    }
-                    className="rounded text-blue-600"
-                  />
-                  <span className="text-sm">Chế độ tự động</span>
-                </label>
-                <label className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    checked={newDevice.toggle}
-                    onChange={(e) =>
-                      setNewDevice({ ...newDevice, toggle: e.target.checked })
-                    }
-                    className="rounded text-blue-600"
-                  />
-                  <span className="text-sm">Bật ngay lập tức</span>
-                </label>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Khách hàng *
-                </label>
-                <select
-                  value={newDevice.tenant_id}
-                  onChange={(e) =>
-                    setNewDevice({ ...newDevice, tenant_id: e.target.value })
-                  }
-                  className="w-full p-2 border rounded-lg"
-                  required
-                >
-                  <option value="">Chọn khách hàng</option>
-                  {tenants.map((tenant) => (
-                    <option key={tenant._id} value={tenant._id}>
-                      {tenant.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div className="mt-6 flex flex-col-reverse md:flex-row gap-3 md:justify-end">
-              <button
-                onClick={editingDeviceId ? handleCancelEdit : () => setCreating(false)}
-                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
-              >
-                Hủy bỏ
-              </button>
-              <button
-                onClick={editingDeviceId ? handleUpdateDevice : handleCreateDevice}
-                disabled={
-                  !newDevice.name ||
-                  !newDevice.mac ||
-                  !newDevice.tenant_id ||
-                  loading
-                }
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center"
-              >
-                {loading ? (
-                  <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                ) : editingDeviceId ? (
-                  "Cập nhật"
-                ) : (
-                  "Tạo thiết bị"
-                )}
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Device Table */}
+        {/* Responsive display - Table for desktop, Cards for mobile */}
         <div className="bg-white shadow-lg rounded-xl overflow-hidden">
           <div className="px-4 py-5 sm:p-6">
-            <h3 className="text-lg font-semibold">Danh sách thiết bị</h3>
-            {loading ? (
-              <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
-              </div>
-            ) : devices.length === 0 ? (
-              <div className="text-center text-gray-500 py-8">
-                Chưa có thiết bị nào được thêm
-              </div>
-            ) : (
-              <div className="overflow-x-auto mt-4">
-                <table className="w-full min-w-[800px]">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">
-                        Tên
-                      </th>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 hidden md:table-cell">
-                        MAC
-                      </th>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">
-                        Khách hàng
-                      </th>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">
-                        Hành động
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                    {devices
-                      .slice()
-                      .sort((a, b) => a.name.localeCompare(b.name))
-                      .map((device) => (
-                        <tr key={device.mac}>
-                          <td className="px-4 py-4">
-                            <div className="font-medium">{device.name}</div>
-                            <div className="text-sm text-gray-500 md:hidden">
-                              {device.mac}
-                            </div>
-                          </td>
-                          <td className="px-4 py-4 hidden md:table-cell">
-                            {device.mac}
-                          </td>
-                          <td className="px-4 py-4">
-                            {tenants.find(
-                              (tenant) => tenant._id === device.tenant_id
-                            )?.name || "N/A"}
-                          </td>
-                          <td className="px-4 py-4 flex gap-2">
-                            <button
-                              onClick={() => handleEditDevice(device)}
-                              className={`text-blue-600 hover:text-blue-900 flex items-center ${
-                                !hasAdminPermissions ? "opacity-50 cursor-not-allowed" : ""
-                              }`}
-                              disabled={loading || !hasAdminPermissions}
-                            >
-                              {loading ? (
-                                <div className="h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                              ) : (
-                                "Chỉnh sửa"
-                              )}
-                            </button>
-                            <button
-                              onClick={() => handleDeleteDevice(device._id)}
-                              className={`text-red-600 hover:text-red-900 flex items-center ${
-                                !hasAdminPermissions ? "opacity-50 cursor-not-allowed" : ""
-                              }`}
-                              disabled={loading || !hasAdminPermissions}
-                            >
-                              {loading ? (
-                                <div className="h-4 w-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></div>
-                              ) : (
-                                "Xóa"
-                              )}
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                  </tbody>
-                </table>
-              </div>
+            <h3 className="text-lg font-semibold mb-4">Danh sách thiết bị</h3>
+
+            {/* Desktop view */}
+            {!isMobileView && (
+              <EditableTable
+                data={devices}
+                columns={columns}
+                isLoading={loading}
+                keyExtractor={(device) => device._id}
+                onEdit={(id, data) => handleEditDevice(id.toString(), data)}
+                onDelete={isAdmin ? handleDeleteDevice : undefined}
+                idField="_id"
+                editableRows={isAdmin}
+              />
+            )}
+
+            {/* Mobile view */}
+            {isMobileView && (
+              <CardView
+                data={devices}
+                columns={columns}
+                isLoading={loading}
+                keyExtractor={(device) => device._id}
+                onCardClick={(device) => {
+                  // In a real application, implement opening a modal for viewing/editing
+                  console.log("Card clicked:", device);
+                }}
+                actions={(device) => (
+                  <div className="flex space-x-2 justify-end">
+                    {isAdmin && (
+                      <>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            // Should implement mobile edit UX here
+                            console.log("Edit clicked:", device);
+                          }}
+                          className="text-blue-600 hover:text-blue-800"
+                        >
+                          Sửa
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (window.confirm("Bạn có chắc chắn muốn xóa thiết bị này?")) {
+                              handleDeleteDevice(device._id);
+                            }
+                          }}
+                          className="text-red-600 hover:text-red-800"
+                        >
+                          Xóa
+                        </button>
+                      </>
+                    )}
+                  </div>
+                )}
+              />
             )}
           </div>
         </div>
