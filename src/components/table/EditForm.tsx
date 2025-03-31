@@ -87,14 +87,11 @@ export function EditForm<T>({
     const value = values[field.name as keyof T];
     const error = errors[field.name as string];
     
-    // Fix type errors by checking if type is included in a custom string union
-    const inputType = field.type as string;
-    
-    // Handle text-like input types
-    if (inputType === 'text' || inputType === 'password' || inputType === 'email') {
+    // Special handling for password and email fields by checking name
+    if (field.name === 'password') {
       return (
         <input
-          type={inputType}
+          type="password"
           id={`edit-${field.name as string}`}
           className={`w-full px-3 py-2 border rounded-md ${
             error ? 'border-red-500' : 'border-gray-300'
@@ -103,8 +100,39 @@ export function EditForm<T>({
           onChange={(e) => handleChange(field, e.target.value)}
           placeholder={field.placeholder}
           disabled={isSubmitting}
-          min={field.min}
-          max={field.max}
+        />
+      );
+    }
+    
+    if (field.name === 'email') {
+      return (
+        <input
+          type="email"
+          id={`edit-${field.name as string}`}
+          className={`w-full px-3 py-2 border rounded-md ${
+            error ? 'border-red-500' : 'border-gray-300'
+          } focus:outline-none focus:ring-2 focus:ring-blue-500`}
+          value={value as string || ''}
+          onChange={(e) => handleChange(field, e.target.value)}
+          placeholder={field.placeholder}
+          disabled={isSubmitting}
+        />
+      );
+    }
+    
+    // Handle text-like input types
+    if (field.type === 'text') {
+      return (
+        <input
+          type="text"
+          id={`edit-${field.name as string}`}
+          className={`w-full px-3 py-2 border rounded-md ${
+            error ? 'border-red-500' : 'border-gray-300'
+          } focus:outline-none focus:ring-2 focus:ring-blue-500`}
+          value={value as string || ''}
+          onChange={(e) => handleChange(field, e.target.value)}
+          placeholder={field.placeholder}
+          disabled={isSubmitting}
         />
       );
     }
