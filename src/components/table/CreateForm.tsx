@@ -14,6 +14,7 @@ export type FormField<T> = {
   placeholder?: string;
   min?: number; // For number input
   max?: number; // For number input
+  visible?: boolean; // For conditional rendering
 };
 
 export type CreateFormProps<T> = {
@@ -54,7 +55,9 @@ export function CreateForm<T>({
     setTouched(allTouched);
     
     // Validate required fields
-    const isValid = fields.every((field) => {
+    const isValid = fields
+    .filter((field) => field.visible !== false)
+    .every((field) => {
       return !field.required || (values[field.name] !== undefined && values[field.name] !== '');
     });
     
@@ -72,7 +75,9 @@ export function CreateForm<T>({
       {title && <h2 className="text-xl font-semibold mb-4">{title}</h2>}
       
       <form onSubmit={handleSubmit} className="space-y-4">
-        {fields.map((field) => (
+        {fields
+        .filter((field) => field.visible !== false)
+        .map((field) => (
           <div key={field.name as string}>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               {field.label} {field.required && <span className="text-red-500">*</span>}

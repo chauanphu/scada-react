@@ -103,7 +103,10 @@ export function APIProvider({ children }: { children: ReactNode }) {
   );
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [userRole, setUserRole] = useState<UserRole | null>(null);
-  const [tenantId, setTenantId] = useState<string | null>(null);
+  // Initialize tenantId from cookies
+  const [tenantId, setTenantId] = useState<string | null>(
+    Cookies.get("tenantId") || null
+  );
   const [permissions, setPermissions] = useState<string[]>([]);
   const navigate = useNavigate();
 
@@ -125,9 +128,14 @@ export function APIProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     validateToken();
-    // Set userRole from cookies
+    // Set userRole and tenantId from cookies
     const role = Cookies.get("userRole") as UserRole;
+    const storedTenantId = Cookies.get("tenantId");
+    
     setUserRole(role);
+    if (storedTenantId) {
+      setTenantId(storedTenantId);
+    }
     setPermissions(ROLE_PERMISSIONS[role] || []);
   }, [token]);
 
