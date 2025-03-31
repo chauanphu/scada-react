@@ -9,7 +9,7 @@ import {
   deleteTenant,
 } from "../lib/tenant.api";
 import { useAPI } from "../contexts/APIProvider";
-import { EditableTable, CreateForm, CardView, FormField } from "../components/table";
+import { EditableTable, CreateForm, CardView, FormField, EditForm } from "../components/table";
 import { useToast } from "../hooks/use-toast";
 
 export const TenantPage: React.FC = () => {
@@ -20,6 +20,8 @@ export const TenantPage: React.FC = () => {
   const [creating, setCreating] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isMobileView, setIsMobileView] = useState(window.innerWidth < 768);
+  const [selectedTenant, setSelectedTenant] = useState<Tenant | null>(null);
+  const [editing, setEditing] = useState(false);
 
   // Initial tenant form data
   const [newTenant, setNewTenant] = useState<CreateTenantData>({
@@ -43,6 +45,12 @@ export const TenantPage: React.FC = () => {
       placeholder: "Khóa tài khoản",
     },
   ];
+
+  // Tenant edit fields - reusing the same structure as create fields
+  const tenantEditFields: FormField<Tenant>[] = tenantFields.map(field => ({
+    ...field,
+    name: field.name as keyof Tenant
+  }));
 
   // Table columns definition
   const columns = [
@@ -199,6 +207,49 @@ export const TenantPage: React.FC = () => {
       throw err; // Rethrow to let the EditableTable know it failed
     }
   };
+  
+  // Handle edit tenant for mobile view
+  const handleOpenEditForm = (tenant: Tenant) => {
+    setSelectedTenant(tenant);
+    setEditing(true);
+  };
+
+  const handleCloseEditForm = () => {
+    setSelectedTenant(null);
+    setEditing(false);
+  };
+
+  const handleSubmitEditForm = async (updatedTenant: Tenant) => {
+    if (!selectedTenant || !token) return;
+
+    try {
+      // Extract only the fields that have changed
+      const updatedFields: Partial<UpdateTenantData> = {};
+      Object.keys(updatedTenant).forEach((key) => {
+        const typedKey = key as keyof Tenant;
+        if (
+          selectedTenant[typedKey] !== updatedTenant[typedKey] && 
+          typedKey !== '_id'
+        ) {
+          // Fix the type error by properly casting the value
+          if (typedKey in updatedTenant) {
+            updatedFields[typedKey as keyof UpdateTenantData] = 
+              updatedTenant[typedKey] as any;
+          }
+        }
+      });
+
+      if (Object.keys(updatedFields).length > 0) {
+        await handleEditTenant(selectedTenant._id, updatedFields);
+      }
+
+      setEditing(false);
+      setSelectedTenant(null);
+    } catch (err) {
+      console.error(err);
+      // Error handled in handleEditTenant
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-100 p-4">
@@ -251,17 +302,13 @@ export const TenantPage: React.FC = () => {
                 columns={columns}
                 isLoading={loading}
                 keyExtractor={(tenant) => tenant._id}
-                onCardClick={(tenant) => {
-                  // You could implement opening a modal for editing
-                  // or navigate to a details page
-                  console.log("Card clicked:", tenant);
-                }}
+                onCardClick={handleOpenEditForm}
                 actions={(tenant) => (
                   <div className="flex space-x-2 justify-end">
                     <button 
                       onClick={(e) => {
                         e.stopPropagation();
-                        // Implement edit action for mobile, perhaps open a modal
+                        handleOpenEditForm(tenant);
                       }}
                       className="text-blue-600 hover:text-blue-800"
                     >
@@ -280,6 +327,19 @@ export const TenantPage: React.FC = () => {
                     </button>
                   </div>
                 )}
+              />
+            )}
+            
+            {/* Edit Form Modal for mobile view */}
+            {editing && selectedTenant && (
+              <EditForm
+                title={`Chỉnh sửa khách hàng: ${selectedTenant.name}`}
+                fields={tenantEditFields}
+                initialValues={selectedTenant}
+                onSubmit={handleSubmitEditForm}
+                onCancel={handleCloseEditForm}
+                isSubmitting={isSubmitting}
+                submitLabel="Cập nhật"
               />
             )}
           </div>
