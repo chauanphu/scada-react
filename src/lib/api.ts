@@ -160,7 +160,7 @@ export async function updateUser(
   userData: Partial<CreateUser>
 ): Promise<User> {
   const response = await fetch(`${PUBLIC_API_URL}/users/${userId}`, {
-    method: "PATCH",
+    method: "PUT",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,

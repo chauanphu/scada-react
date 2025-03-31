@@ -8,6 +8,7 @@ import {
   getRoles,
   User,
   Role,
+  UserRole,
 } from "../lib/api";
 import { getTenants, Tenant } from "../lib/tenant.api";
 import { EditableTable, CreateForm, CardView, FormField, EditForm } from "../components/table";
@@ -29,7 +30,7 @@ interface UserFormData {
 }
 
 export const UsersPage: React.FC = () => {
-  const { token, userRole } = useAPI();
+  const { token, userRole, tenantId } = useAPI();
   const { toast } = useToast();
   const [users, setUsers] = useState<ExtendedUser[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
@@ -47,10 +48,9 @@ export const UsersPage: React.FC = () => {
     email: "",
     password: "",
     role: "",
-    tenant_id: "",
+    tenant_id: tenantId || "", // Set default to current user's tenant_id
     disabled: false,
   });
-
   // Form fields for the creation form
   const userFields: FormField<UserFormData>[] = [
     {
@@ -93,6 +93,7 @@ export const UsersPage: React.FC = () => {
         value: tenant._id,
         label: tenant.name,
       })),
+      visible: userRole === UserRole.SUPERADMIN
     },
     {
       name: "disabled",
@@ -176,7 +177,7 @@ export const UsersPage: React.FC = () => {
   useEffect(() => {
     fetchUsers();
     fetchRoles();
-    if (userRole === "superadmin") fetchTenants();
+    if (userRole === UserRole.SUPERADMIN) fetchTenants();
   }, [fetchUsers, fetchRoles, fetchTenants, userRole]);
 
   // Handle create user
@@ -192,7 +193,7 @@ export const UsersPage: React.FC = () => {
         email: "",
         password: "",
         role: "",
-        tenant_id: "",
+        tenant_id: tenantId || "", // Keep using current tenant
         disabled: false,
       });
       toast({
@@ -214,12 +215,17 @@ export const UsersPage: React.FC = () => {
   // Handle edit user
   const handleEditUser = async (id: string, data: Partial<UserFormData>) => {
     if (!token) return;
-    
+
     // Only include password if it's provided
     if (data.password === "") {
       delete data.password;
     }
-    
+
+    // Ensure tenant_id is always set
+    if (!data.tenant_id && tenantId) {
+      data.tenant_id = tenantId;
+    }
+
     try {
       await updateUser(token, id, data);
       setUsers(
@@ -280,7 +286,7 @@ export const UsersPage: React.FC = () => {
     try {
       // Only include fields that have changed
       const updatedFields: Partial<UserFormData> = {};
-      
+
       // Map selectedUser to a UserFormData object to make comparison easier
       const currentUser: UserFormData = {
         username: selectedUser.username,
@@ -289,7 +295,7 @@ export const UsersPage: React.FC = () => {
         tenant_id: selectedUser.tenant?._id || "",
         disabled: selectedUser.disabled || false,
       };
-      
+
       Object.keys(updatedUser).forEach((key) => {
         const typedKey = key as keyof UserFormData;
         // Special handling for empty password
@@ -297,7 +303,7 @@ export const UsersPage: React.FC = () => {
           if (updatedUser[typedKey] && updatedUser[typedKey] !== "") {
             updatedFields[typedKey] = updatedUser[typedKey];
           }
-        } 
+        }
         // Regular comparison for other fields
         else if (currentUser[typedKey] !== updatedUser[typedKey]) {
           updatedFields[typedKey] = updatedUser[typedKey] as any;
@@ -335,7 +341,7 @@ export const UsersPage: React.FC = () => {
       sortable: true,
       editable: true,
     },
-    ...(userRole === "superadmin" ? [{
+    ...(userRole === UserRole.SUPERADMIN ? [{
       header: "Khách hàng",
       accessor: (user: ExtendedUser) => getTenantId(user),
       sortable: true,
@@ -509,7 +515,7 @@ export const UsersPage: React.FC = () => {
                   email: selectedUser.email,
                   password: "",
                   role: selectedUser.role,
-                  tenant_id: selectedUser.tenant?._id || "",
+                  tenant_id: selectedUser.tenant?._id || tenantId || "", // First try user's tenant, fallback to current user's tenant
                   disabled: selectedUser.disabled || false,
                 }}
                 onSubmit={handleSubmitEditForm}
