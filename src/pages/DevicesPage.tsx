@@ -179,6 +179,11 @@ export const DevicesPage: React.FC = () => {
     });
   }
 
+  // Format time with leading zeros
+  const formatTime = (hour: number, minute: number) => {
+    return `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+  };
+
   // Table columns definition - based on user role
   const columns: EditableColumn<Device>[] = [
     {
@@ -195,6 +200,18 @@ export const DevicesPage: React.FC = () => {
       editable: isAdmin,
       type: "text"
     },
+    {
+      header: "Giờ bật",
+      accessor: (device) => formatTime(device.hour_on ?? 0, device.minute_on ?? 0),
+      sortable: true,
+      editable: false
+    },
+    {
+      header: "Giờ tắt",
+      accessor: (device) => formatTime(device.hour_off ?? 0, device.minute_off ?? 0),
+      sortable: true,
+      editable: false
+    }
   ];
 
   // Only show tenant column for admin/superadmin users
