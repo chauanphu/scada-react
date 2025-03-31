@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Device } from "../lib/api";
+import { Device, UserRole } from "../lib/api";
 import { DeviceStatus } from "../types/Cluster";
 import { useAPI } from "../contexts/APIProvider";
 import { useWebSocket } from "../contexts/WebsocketProvider";
@@ -15,11 +15,13 @@ interface DeviceDetailsProps {
 
 export const DeviceDetails = ({ device, deviceStatus }: DeviceDetailsProps) => {
   const apiContext = useAPI();
+  const { userRole } = apiContext;
+  const isAuthorized = userRole === UserRole.SUPERADMIN || userRole === UserRole.ADMIN || userRole === UserRole.OPERATOR;
   const wsContext = useWebSocket();
   const { addToast } = useToast();
   const [loading, setLoading] = useState(false);
   const [editingSchedule, setEditingSchedule] = useState(false);
-
+  
   // Create local state for optimistic UI updates
   const [localDeviceStatus, setLocalDeviceStatus] = useState<DeviceStatus | undefined>(deviceStatus);
   
@@ -33,7 +35,6 @@ export const DeviceDetails = ({ device, deviceStatus }: DeviceDetailsProps) => {
   const verificationStartTimeRef = useRef<number>(0);
   // Add a reference to track the last processed deviceStatus timestamp
   const lastProcessedUpdateRef = useRef<string>("");
-  
   const [hourOn, setHourOn] = useState(deviceStatus?.hour_on || 0);
   const [minuteOn, setMinuteOn] = useState(deviceStatus?.minute_on || 0);
   const [hourOff, setHourOff] = useState(deviceStatus?.hour_off || 0);
@@ -137,7 +138,6 @@ export const DeviceDetails = ({ device, deviceStatus }: DeviceDetailsProps) => {
 
   const isIdle = verifying || localDeviceStatus?.state === "";
   const isConnected = localDeviceStatus?.state !== "Mất kết nối";
-
   const handleTogglePower = async () => {
     if (!localDeviceStatus || isIdle) return;
     setLoading(true);
@@ -330,7 +330,7 @@ export const DeviceDetails = ({ device, deviceStatus }: DeviceDetailsProps) => {
           <Switch
             checked={localDeviceStatus?.toggle || false}
             onChange={handleTogglePower}
-            disabled={loading || !isConnected || isIdle}
+            disabled={loading || !isConnected || isIdle || !isAuthorized}
             onColor="#4ade80"  // green when "on"
             offColor="#f87171" // red when "off"
             uncheckedIcon={
@@ -354,7 +354,7 @@ export const DeviceDetails = ({ device, deviceStatus }: DeviceDetailsProps) => {
           <Button
             variant={localDeviceStatus?.auto ? "outline" : "default"}
             onClick={handleToggleAuto}
-            disabled={loading || !isConnected || isIdle}
+            disabled={loading || !isConnected || isIdle || !isAuthorized}
             className="w-full"
           >
             Thủ công
@@ -362,7 +362,7 @@ export const DeviceDetails = ({ device, deviceStatus }: DeviceDetailsProps) => {
           <Button
             variant={localDeviceStatus?.auto ? "default" : "outline"}
             onClick={handleToggleAuto}
-            disabled={loading || !isConnected || isIdle}
+            disabled={loading || !isConnected || isIdle || !isAuthorized}
             className="w-full"
           >
             Tự động
@@ -380,7 +380,7 @@ export const DeviceDetails = ({ device, deviceStatus }: DeviceDetailsProps) => {
               onChange={(e) => setHourOn(Number(e.target.value))}
               min={0}
               max={23}
-              disabled={!isConnected || isIdle || (!editingSchedule && isConnected)}
+              disabled={!isConnected || isIdle || (!editingSchedule && isConnected) ||!isAuthorized}
             />
             <Input
               type="number"
@@ -389,7 +389,7 @@ export const DeviceDetails = ({ device, deviceStatus }: DeviceDetailsProps) => {
               onChange={(e) => setMinuteOn(Number(e.target.value))}
               min={0}
               max={59}
-              disabled={!isConnected || isIdle || (!editingSchedule && isConnected)}
+              disabled={!isConnected || isIdle || (!editingSchedule && isConnected) ||!isAuthorized}
             />
             <Input
               type="number"
@@ -398,7 +398,7 @@ export const DeviceDetails = ({ device, deviceStatus }: DeviceDetailsProps) => {
               onChange={(e) => setHourOff(Number(e.target.value))}
               min={0}
               max={23}
-              disabled={!isConnected || isIdle || (!editingSchedule && isConnected)}
+              disabled={!isConnected || isIdle || (!editingSchedule && isConnected) ||!isAuthorized}
             />
             <Input
               type="number"
@@ -407,7 +407,7 @@ export const DeviceDetails = ({ device, deviceStatus }: DeviceDetailsProps) => {
               onChange={(e) => setMinuteOff(Number(e.target.value))}
               min={0}
               max={59}
-              disabled={!isConnected || isIdle || (!editingSchedule && isConnected)}
+              disabled={!isConnected || isIdle || (!editingSchedule && isConnected) ||!isAuthorized}
             />
           </div>
 
@@ -416,7 +416,7 @@ export const DeviceDetails = ({ device, deviceStatus }: DeviceDetailsProps) => {
               <Button
                 variant="default"
                 onClick={startEditing}
-                disabled={loading || !isConnected || isIdle}
+                disabled={loading || !isConnected || isIdle || !isAuthorized}
                 className="w-full"
               >
                 Chỉnh lịch hoạt động
@@ -426,7 +426,7 @@ export const DeviceDetails = ({ device, deviceStatus }: DeviceDetailsProps) => {
                 <Button
                   variant="default"
                   onClick={handleSetSchedule}
-                  disabled={loading || !isConnected || isIdle}
+                  disabled={loading || !isConnected || isIdle || !isAuthorized}
                   className="flex-1"
                 >
                   Xác nhận
@@ -434,7 +434,7 @@ export const DeviceDetails = ({ device, deviceStatus }: DeviceDetailsProps) => {
                 <Button
                   variant="outline"
                   onClick={cancelEditing}
-                  disabled={loading}
+                  disabled={loading || !isConnected || isIdle || !isAuthorized}
                   className="flex-1"
                 >
                   Hủy

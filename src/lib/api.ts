@@ -393,7 +393,7 @@ export async function getEnergyData(
 
 export async function getRoles(token: string): Promise<Role[]> {
   try {
-    const response = await fetch(`${PUBLIC_API_URL}/auth/roles`, {
+    const response = await fetch(`${PUBLIC_API_URL}/auth/roles/`, {
       method: "GET",
       headers: {
         accept: "application/json",

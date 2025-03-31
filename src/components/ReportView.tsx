@@ -19,7 +19,7 @@ interface ReportViewProps {
 export const ReportView: React.FC<ReportViewProps> = ({ device }) => {
   const { deviceStatuses } = useWebSocket() || { deviceStatuses: {} as Record<string, { power?: number; total_energy?: number }> };
   const [filters, setFilters] = useState<ReportFilters>({
-    startDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    startDate: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     endDate: new Date().toISOString().split('T')[0],
     aggregation: "hourly",
   });
