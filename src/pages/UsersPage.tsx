@@ -10,7 +10,7 @@ import {
   Role,
 } from "../lib/api";
 import { getTenants, Tenant } from "../lib/tenant.api";
-import { Button } from "../components/ui/button";
+import { EditableTable, CreateForm, CardView, FormField, EditForm } from "../components/table";
 import { useToast } from "../hooks/use-toast";
 
 interface ExtendedUser extends User {
@@ -19,96 +19,172 @@ interface ExtendedUser extends User {
   tenant?: Tenant; // Tenant is now an object
 }
 
+interface UserFormData {
+  username: string;
+  email: string;
+  password?: string;
+  role: string;
+  tenant_id: string;
+  disabled?: boolean;
+}
+
 export const UsersPage: React.FC = () => {
-  const apiContext = useAPI();
+  const { token, userRole } = useAPI();
   const { toast } = useToast();
   const [users, setUsers] = useState<ExtendedUser[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
-  const [editingUser, setEditingUser] = useState<ExtendedUser | null>(null);
-  const [newUser, setNewUser] = useState({
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isMobileView, setIsMobileView] = useState(window.innerWidth < 768);
+  const [selectedUser, setSelectedUser] = useState<ExtendedUser | null>(null);
+  const [editing, setEditing] = useState(false);
+
+  // Initial user form data
+  const [newUser, setNewUser] = useState<UserFormData>({
     username: "",
     email: "",
     password: "",
     role: "",
     tenant_id: "",
+    disabled: false,
+  });
+
+  // Form fields for the creation form
+  const userFields: FormField<UserFormData>[] = [
+    {
+      name: "username",
+      label: "Tên đăng nhập",
+      type: "text",
+      required: true,
+      placeholder: "Nhập tên đăng nhập",
+    },
+    {
+      name: "email",
+      label: "Email",
+      type: "text", // Changed from "email" to "text"
+      required: true,
+      placeholder: "Nhập email",
+    },
+    {
+      name: "password",
+      label: "Mật khẩu",
+      type: "text", // Changed from "password" to "text"
+      required: creating, // Only required for new users
+      placeholder: "Nhập mật khẩu",
+    },
+    {
+      name: "role",
+      label: "Vai trò",
+      type: "select",
+      required: true,
+      options: roles.map((role) => ({
+        value: role.role_id,
+        label: role.role_name,
+      })),
+    },
+    {
+      name: "tenant_id",
+      label: "Khách hàng",
+      type: "select",
+      required: true,
+      options: tenants.map((tenant) => ({
+        value: tenant._id,
+        label: tenant.name,
+      })),
+    },
+    {
+      name: "disabled",
+      label: "Vô hiệu hóa",
+      type: "checkbox",
+      placeholder: "Vô hiệu hóa tài khoản",
+    },
+  ];
+
+  // User edit fields - reusing the same structure but without required password
+  const userEditFields: FormField<UserFormData>[] = userFields.map(field => {
+    if (field.name === 'password') {
+      return { ...field, required: false, placeholder: "Để trống nếu không muốn thay đổi" };
+    }
+    return field;
   });
 
   // Fetch users
   const fetchUsers = useCallback(async () => {
-    if (!apiContext?.token) return;
+    if (!token) return;
     setLoading(true);
-    setError(null);
     try {
-      const data = await getUsers(apiContext.token);
+      const data = await getUsers(token);
       setUsers(data as ExtendedUser[]);
     } catch (err) {
-      setError("Không thể tải danh sách người dùng, " + err);
+      console.error(err);
+      toast({
+        title: "Lỗi",
+        description: "Không thể tải danh sách người dùng",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
-  }, [apiContext?.token]);
+  }, [token, toast]);
 
   // Fetch roles
   const fetchRoles = useCallback(async () => {
-    if (!apiContext?.token) return;
+    if (!token) return;
     try {
-      const data = await getRoles(apiContext.token);
+      const data = await getRoles(token);
       setRoles(data);
     } catch (err) {
+      console.error(err);
       toast({
         variant: "destructive",
         title: "Lỗi",
-        description: `Không thể tải danh sách vai trò ${err}`,
+        description: "Không thể tải danh sách vai trò",
       });
     }
-  }, [apiContext?.token, toast]);
+  }, [token, toast]);
 
   // Fetch tenants
   const fetchTenants = useCallback(async () => {
-    if (!apiContext?.token) return;
+    if (!token) return;
     try {
-      const data = await getTenants(apiContext.token);
+      const data = await getTenants(token);
       setTenants(data);
     } catch (err) {
+      console.error(err);
       toast({
         variant: "destructive",
         title: "Lỗi",
-        description: `Không thể tải danh sách khách hàng ${err}`,
+        description: "Không thể tải danh sách khách hàng",
       });
     }
-  }, [apiContext?.token, toast]);
+  }, [token, toast]);
+
+  // Handle window resize for responsive view
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobileView(window.innerWidth < 768);
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  }, []);
 
   useEffect(() => {
     fetchUsers();
     fetchRoles();
-    if (apiContext?.userRole === "superadmin") fetchTenants();
-  }, [fetchUsers, fetchRoles, fetchTenants]);
+    if (userRole === "superadmin") fetchTenants();
+  }, [fetchUsers, fetchRoles, fetchTenants, userRole]);
 
   // Handle create user
-  const handleCreateUser = async () => {
-    if (!apiContext?.token) return;
-    if (
-      !newUser.username ||
-      !newUser.email ||
-      !newUser.password ||
-      !newUser.role ||
-      !newUser.tenant_id
-    ) {
-      toast({
-        variant: "destructive",
-        title: "Lỗi",
-        description: "Vui lòng điền đầy đủ thông tin",
-      });
-      return;
-    }
-
-    setLoading(true);
+  const handleCreateUser = async (values: UserFormData) => {
+    if (!token) return;
+    setIsSubmitting(true);
     try {
-      await createUser(apiContext.token, newUser);
+      await createUser(token, values);
       await fetchUsers();
       setCreating(false);
       setNewUser({
@@ -117,339 +193,330 @@ export const UsersPage: React.FC = () => {
         password: "",
         role: "",
         tenant_id: "",
+        disabled: false,
       });
-      toast({ title: "Thành công", description: "Đã tạo người dùng mới" });
+      toast({
+        title: "Thành công",
+        description: "Đã tạo người dùng mới",
+      });
     } catch (err) {
+      console.error(err);
       toast({
         variant: "destructive",
         title: "Lỗi",
         description: "Không thể tạo người dùng mới",
       });
     } finally {
-      setLoading(false);
+      setIsSubmitting(false);
     }
   };
 
   // Handle edit user
-  const handleEditUser = async () => {
-    if (!apiContext?.token || !editingUser) return;
-    if (
-      !editingUser.username ||
-      !editingUser.email ||
-      !editingUser.role ||
-      !editingUser.tenant ||
-      !editingUser.tenant._id
-    ) {
-      toast({
-        variant: "destructive",
-        title: "Lỗi",
-        description: "Vui lòng điền đầy đủ thông tin",
-      });
-      return;
+  const handleEditUser = async (id: string, data: Partial<UserFormData>) => {
+    if (!token) return;
+    
+    // Only include password if it's provided
+    if (data.password === "") {
+      delete data.password;
     }
-
-    setLoading(true);
+    
     try {
-      await updateUser(apiContext.token, editingUser._id, {
-        username: editingUser.username,
-        email: editingUser.email,
-        role: editingUser.role,
-        disabled: editingUser.disabled || false, // Ensure disabled is included
-        tenant_id: editingUser.tenant._id,
+      await updateUser(token, id, data);
+      setUsers(
+        users.map((user) =>
+          user._id === id ? { ...user, ...data } : user
+        )
+      );
+      toast({
+        title: "Thành công",
+        description: "Đã cập nhật thông tin người dùng",
       });
-      await fetchUsers();
-      setEditingUser(null);
-      toast({ title: "Thành công", description: "Đã cập nhật người dùng" });
     } catch (err) {
+      console.error(err);
       toast({
         variant: "destructive",
         title: "Lỗi",
-        description: "Không thể cập nhật người dùng",
+        description: "Không thể cập nhật thông tin người dùng",
       });
-    } finally {
-      setLoading(false);
+      throw err; // Rethrow to let the calling component know it failed
     }
   };
 
   // Handle delete user
-  const handleDeleteUser = async (id: string) => {
-    if (!confirm("Bạn có chắc chắn muốn xóa người dùng này?")) return;
+  const handleDeleteUser = async (id: string | number) => {
+    if (!token) return;
     try {
-      await deleteUser(apiContext?.token || "", id);
-      await fetchUsers();
-      toast({ title: "Thành công", description: "Đã xóa người dùng" });
+      await deleteUser(token, id.toString());
+      setUsers(users.filter((user) => user._id !== id.toString()));
+      toast({
+        title: "Thành công",
+        description: "Đã xóa người dùng",
+      });
     } catch (err) {
+      console.error(err);
       toast({
         variant: "destructive",
         title: "Lỗi",
-        description: `Không thể xóa người dùng ${err}`,
+        description: "Không thể xóa người dùng",
       });
+      throw err; // Rethrow to let the calling component know it failed
     }
   };
+
+  // Handle edit user for mobile view
+  const handleOpenEditForm = (user: ExtendedUser) => {
+    setSelectedUser(user);
+    setEditing(true);
+  };
+
+  const handleCloseEditForm = () => {
+    setSelectedUser(null);
+    setEditing(false);
+  };
+
+  const handleSubmitEditForm = async (updatedUser: UserFormData) => {
+    if (!selectedUser || !token) return;
+
+    try {
+      // Only include fields that have changed
+      const updatedFields: Partial<UserFormData> = {};
+      
+      // Map selectedUser to a UserFormData object to make comparison easier
+      const currentUser: UserFormData = {
+        username: selectedUser.username,
+        email: selectedUser.email,
+        role: selectedUser.role,
+        tenant_id: selectedUser.tenant?._id || "",
+        disabled: selectedUser.disabled || false,
+      };
+      
+      Object.keys(updatedUser).forEach((key) => {
+        const typedKey = key as keyof UserFormData;
+        // Special handling for empty password
+        if (typedKey === 'password') {
+          if (updatedUser[typedKey] && updatedUser[typedKey] !== "") {
+            updatedFields[typedKey] = updatedUser[typedKey];
+          }
+        } 
+        // Regular comparison for other fields
+        else if (currentUser[typedKey] !== updatedUser[typedKey]) {
+          updatedFields[typedKey] = updatedUser[typedKey] as any;
+        }
+      });
+
+      if (Object.keys(updatedFields).length > 0) {
+        await handleEditUser(selectedUser._id, updatedFields);
+      }
+
+      setEditing(false);
+      setSelectedUser(null);
+    } catch (err) {
+      console.error(err);
+      // Error handled in handleEditUser
+    }
+  };
+
+  // Table columns definition
+  const getTenantId = (user: ExtendedUser) => user.tenant?._id || "";
+  const setTenantId = (user: Partial<ExtendedUser>, value: string) => {
+    return { ...user, tenant_id: value };
+  };
+
+  const columns = [
+    {
+      header: "Tên đăng nhập",
+      accessor: "username" as const,
+      sortable: true,
+      editable: true,
+    },
+    {
+      header: "Email",
+      accessor: "email" as const,
+      sortable: true,
+      editable: true,
+    },
+    ...(userRole === "superadmin" ? [{
+      header: "Khách hàng",
+      accessor: (user: ExtendedUser) => getTenantId(user),
+      sortable: true,
+      editable: true,
+      cell: (user: ExtendedUser) => (
+        <div>{user.tenant?.name || "—"}</div>
+      ),
+      editComponent: (value: string, onChange: (value: string) => void) => (
+        <select
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+        >
+          <option value="">Chọn khách hàng</option>
+          {tenants.map((tenant) => (
+            <option key={tenant._id} value={tenant._id}>
+              {tenant.name}
+            </option>
+          ))}
+        </select>
+      ),
+      applyEdit: (user: Partial<ExtendedUser>, value: string) => setTenantId(user, value),
+    }] : []),
+    {
+      header: "Vai trò",
+      accessor: "role" as const,
+      sortable: true,
+      editable: true,
+      cell: (user: ExtendedUser) => {
+        const roleObj = roles.find(r => r.role_id === user.role);
+        return <div>{roleObj?.role_name || user.role}</div>;
+      },
+      editComponent: (value: string, onChange: (value: string) => void) => (
+        <select
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+        >
+          <option value="">Chọn vai trò</option>
+          {roles.map((role) => (
+            <option key={role.role_id} value={role.role_id}>
+              {role.role_name}
+            </option>
+          ))}
+        </select>
+      ),
+    },
+    {
+      header: "Trạng thái",
+      accessor: "disabled" as const,
+      sortable: true,
+      editable: true,
+      cell: (user: ExtendedUser) => (
+        <div>{user.disabled ? "Vô hiệu hóa" : "Hoạt động"}</div>
+      ),
+      editComponent: (value: boolean, onChange: (value: boolean) => void) => (
+        <input
+          type="checkbox"
+          checked={value}
+          onChange={(e) => onChange(e.target.checked)}
+          className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+        />
+      ),
+    },
+  ];
 
   return (
     <div className="min-h-screen bg-gray-100 p-4">
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl md:text-3xl font-bold">Quản lý người dùng</h1>
-          <Button
-            onClick={() => setCreating(true)}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-          >
-            + Thêm người dùng
-          </Button>
+          {userRole === "admin" || userRole === "superadmin" ? (
+            <button
+              onClick={() => setCreating(!creating)}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center"
+            >
+              <span className="hidden md:inline">+ Thêm người dùng</span>
+              <span className="md:hidden">+ Thêm</span>
+            </button>
+          ) : null}
         </div>
 
-        {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg mb-6">
-            {error}
-          </div>
+        {creating && (userRole === "admin" || userRole === "superadmin") && (
+          <CreateForm
+            fields={userFields}
+            initialValues={newUser}
+            onSubmit={handleCreateUser}
+            onCancel={() => setCreating(false)}
+            title="Tạo người dùng mới"
+            submitLabel="Tạo người dùng"
+            isSubmitting={isSubmitting}
+          />
         )}
 
-        {creating && (
-          <div className="bg-white shadow-lg rounded-xl mb-6 p-4 md:p-6">
-            <h2 className="text-xl font-semibold mb-4">Thêm người dùng mới</h2>
-            <div className="space-y-4">
-              <input
-                type="text"
-                placeholder="Tên đăng nhập *"
-                value={newUser.username}
-                onChange={(e) =>
-                  setNewUser({ ...newUser, username: e.target.value })
-                }
-                className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-              />
-              <input
-                type="email"
-                placeholder="Email *"
-                value={newUser.email}
-                onChange={(e) =>
-                  setNewUser({ ...newUser, email: e.target.value })
-                }
-                className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-              />
-              <input
-                type="password"
-                placeholder="Mật khẩu *"
-                value={newUser.password}
-                onChange={(e) =>
-                  setNewUser({ ...newUser, password: e.target.value })
-                }
-                className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-              />
-              <select
-                value={newUser.role}
-                onChange={(e) =>
-                  setNewUser({ ...newUser, role: e.target.value })
-                }
-                className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Chọn vai trò *</option>
-                {roles.map((role: Role) => (
-                  <option key={role.role_id} value={role.role_id}>
-                    {role.role_name}
-                  </option>
-                ))}
-              </select>
-              <select
-                value={newUser.tenant_id}
-                onChange={(e) =>
-                  setNewUser({ ...newUser, tenant_id: e.target.value })
-                }
-                className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Chọn khách hàng *</option>
-                {tenants.map((tenant) => (
-                  <option key={tenant._id} value={tenant._id}>
-                    {tenant.name}
-                  </option>
-                ))}
-              </select>
-              <div className="flex justify-end space-x-2">
-                <Button
-                  variant="outline"
-                  onClick={() => setCreating(false)}
-                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
-                >
-                  Hủy
-                </Button>
-                <Button
-                  onClick={handleCreateUser}
-                  disabled={loading}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                >
-                  {loading ? "Đang tạo..." : "Tạo"}
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {editingUser && (
-          <div className="bg-white shadow-lg rounded-xl mb-6 p-4 md:p-6">
-            <h2 className="text-xl font-semibold mb-4">Chỉnh sửa người dùng</h2>
-            <div className="space-y-4">
-              <input
-                type="text"
-                placeholder="Tên đăng nhập *"
-                value={editingUser.username}
-                onChange={(e) =>
-                  setEditingUser({ ...editingUser, username: e.target.value })
-                }
-                className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-              />
-              <input
-                type="email"
-                placeholder="Email *"
-                value={editingUser.email}
-                onChange={(e) =>
-                  setEditingUser({ ...editingUser, email: e.target.value })
-                }
-                className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-              />
-              <select
-                value={editingUser.role}
-                onChange={(e) =>
-                  setEditingUser({ ...editingUser, role: e.target.value })
-                }
-                className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Chọn vai trò *</option>
-                {roles.map((role: Role) => (
-                  <option key={role.role_id} value={role.role_name}>
-                    {role.role_name}
-                  </option>
-                ))}
-              </select>
-              {(editingUser.tenant) && (
-                <select
-                  value={editingUser.tenant._id}
-                  onChange={(e) =>
-                    setEditingUser({
-                      ...editingUser,
-                      tenant: tenants.find(
-                        (tenant) => tenant._id === e.target.value
-                      ) || undefined,
-                    })
-                  }
-                  className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Chọn khách hàng *</option>
-                  {tenants.map((tenant) => (
-                    <option key={tenant._id} value={tenant._id}>
-                      {tenant.name}
-                    </option>
-                  ))}
-                </select>
-              )}
-              <label className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  checked={editingUser.disabled || false}
-                  onChange={(e) =>
-                    setEditingUser({
-                      ...editingUser,
-                      disabled: e.target.checked,
-                    })
-                  }
-                  className="rounded text-blue-600"
-                />
-                <span className="text-sm">Vô hiệu hóa</span>
-              </label>
-              <div className="flex justify-end space-x-2">
-                <Button
-                  variant="outline"
-                  onClick={() => setEditingUser(null)}
-                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
-                >
-                  Hủy
-                </Button>
-                <Button
-                  onClick={handleEditUser}
-                  disabled={loading}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                >
-                  {loading ? "Đang cập nhật..." : "Cập nhật"}
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* User Table */}
         <div className="bg-white shadow-lg rounded-xl overflow-hidden">
           <div className="px-4 py-5 sm:p-6">
-            <h3 className="text-lg font-semibold">Danh sách người dùng</h3>
-            {loading ? (
-              <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
-              </div>
-            ) : users.length === 0 ? (
-              <div className="text-center text-gray-500 py-8">
-                Chưa có người dùng nào
-              </div>
-            ) : (
-              <div className="overflow-x-auto mt-4">
-                <table className="w-full min-w-[800px]">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">
-                        Tên
-                      </th>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">
-                        Email
-                      </th>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">
-                        Vai trò
-                      </th>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">
-                        Trạng thái
-                      </th>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">
-                        Hành động
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                    {users.map((user) => (
-                      <tr key={user._id}>
-                        <td className="px-4 py-4">
-                          <div className="font-medium">{user.username}</div>
-                        </td>
-                        <td className="px-4 py-4">{user.email}</td>
-                        <td className="px-4 py-4">{user.role}</td>
-                        <td className="px-4 py-4">
-                          <span
-                            className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                              user.disabled
-                                ? "bg-red-100 text-red-800"
-                                : "bg-green-100 text-green-800"
-                            }`}
-                          >
-                            {user.disabled ? "Vô hiệu hóa" : "Hoạt động"}
-                          </span>
-                        </td>
-                        <td className="px-4 py-4 flex space-x-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setEditingUser(user)}
-                          >
-                            Chỉnh sửa
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => handleDeleteUser(user._id)}
-                          >
-                            Xóa
-                          </Button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+            <h3 className="text-lg font-semibold mb-4">Danh sách người dùng</h3>
+
+            {/* Desktop view */}
+            {!isMobileView && (
+              <EditableTable
+                data={users}
+                columns={columns}
+                isLoading={loading}
+                keyExtractor={(user) => user._id}
+                onEdit={(id, data) => handleEditUser(id.toString(), data)}
+                onDelete={
+                  userRole === "admin" || userRole === "superadmin"
+                    ? handleDeleteUser
+                    : undefined
+                }
+                idField="_id"
+                editableRows={userRole === "admin" || userRole === "superadmin"}
+              />
+            )}
+
+            {/* Mobile view */}
+            {isMobileView && (
+              <CardView
+                data={users}
+                columns={columns}
+                isLoading={loading}
+                keyExtractor={(user) => user._id}
+                onCardClick={
+                  userRole === "admin" || userRole === "superadmin"
+                    ? handleOpenEditForm
+                    : undefined
+                }
+                actions={(user) => (
+                  <div className="flex space-x-2 justify-end">
+                    {(userRole === "admin" || userRole === "superadmin") && (
+                      <>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOpenEditForm(user);
+                          }}
+                          className="text-blue-600 hover:text-blue-800"
+                        >
+                          Sửa
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (
+                              window.confirm(
+                                "Bạn có chắc chắn muốn xóa người dùng này?"
+                              )
+                            ) {
+                              handleDeleteUser(user._id);
+                            }
+                          }}
+                          className="text-red-600 hover:text-red-800"
+                        >
+                          Xóa
+                        </button>
+                      </>
+                    )}
+                  </div>
+                )}
+              />
+            )}
+
+            {/* Edit Form Modal for mobile view */}
+            {editing && selectedUser && (
+              <EditForm
+                title={`Chỉnh sửa người dùng: ${selectedUser.username}`}
+                fields={userEditFields}
+                initialValues={{
+                  username: selectedUser.username,
+                  email: selectedUser.email,
+                  password: "",
+                  role: selectedUser.role,
+                  tenant_id: selectedUser.tenant?._id || "",
+                  disabled: selectedUser.disabled || false,
+                }}
+                onSubmit={handleSubmitEditForm}
+                onCancel={handleCloseEditForm}
+                isSubmitting={isSubmitting}
+                submitLabel="Cập nhật"
+              />
             )}
           </div>
         </div>
