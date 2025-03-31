@@ -41,15 +41,38 @@ This page defines the devices general information and control settings
 **Table:**
 - `name` (string): device name
 - `mac` (string): device mac address
-- `tenant` (string): tenant name . This only display if the logged in user is tenant, Hide for other 
+- `tenant` (string): tenant name . This only display if the logged in user is superadmin, hide for others 
+- `time_on`: `hour_on`:`minute_on`
+- `time_off`: `hour_off`:`minute_off`
 
-**Create form** attributes:
+**Create form** / **EditForm** attributes:
 - `name`
 - `mac`
-- `tenant` (Dropdown)
+- `tenant` (Dropdown). Only visible for user with superadmin role.
 - `hour_on` (0-24)
 - `hour_off` (0-24)
 - `minute_on` (0-59)
 - `minute_off` (0-59)
 - `auto` (boolean)
 - `toggle` (boolean)
+
+### `UsersPage.tsx` 
+
+Only accessible by admin and superadmin, editable.
+
+This page defines the devices general information and control settings
+
+**Table:**
+- `username` (string): username
+- `email` (string): user's email
+- `tenant` (string): tenant name . This only display if the logged-in user's role is superadmin, Hide for other
+- `role` (Dropdown): admin: Quản trị viên, superadmin: Toàn quyền, monitor: Giám sát, operator: Vận hành
+- `password` (string): user's password
+- `disabled` (boolean): active by default ?
+
+**Create form** attributes:
+- `username`
+- `email`
+- `tenant` (Dropdown)
+- `role` (Dropdown): admin: Quản trị viên, superadmin: Toàn quyền, monitor: Giám sát, operator: Vận hành
+- `disabled` (boolean): active state, use Switch component
