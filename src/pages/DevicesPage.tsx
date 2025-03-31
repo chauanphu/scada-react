@@ -68,7 +68,7 @@ export const DevicesPage: React.FC = () => {
       setDevices(devicesData);
 
       // Only fetch tenants for admin/superadmin users
-      if (isAdmin) {
+      if (isSuperAdmin) {
         const tenantsData = await apiGetTenants(token);
         setTenants(tenantsData);
       }
@@ -99,7 +99,6 @@ export const DevicesPage: React.FC = () => {
       window.removeEventListener("resize", handleResize);
     };
   }, []);
-
   // Form fields for the creation form - all required fields from spec
   const deviceFields: FormField<CreateDeviceData>[] = [
     {
@@ -115,54 +114,55 @@ export const DevicesPage: React.FC = () => {
       type: "text",
       required: true,
       placeholder: "Nhập địa chỉ MAC",
+      disabled: !isSuperAdmin,
     },
-    {
-      name: "hour_on",
-      label: "Giờ bật",
-      type: "number",
-      required: true,
-      min: 0,
-      max: 23,
-      placeholder: "0-23",
-    },
-    {
-      name: "minute_on",
-      label: "Phút bật",
-      type: "number",
-      required: true,
-      min: 0,
-      max: 59,
-      placeholder: "0-59",
-    },
-    {
-      name: "hour_off",
-      label: "Giờ tắt",
-      type: "number",
-      required: true,
-      min: 0,
-      max: 23,
-      placeholder: "0-23",
-    },
-    {
-      name: "minute_off",
-      label: "Phút tắt",
-      type: "number",
-      required: true,
-      min: 0,
-      max: 59,
-      placeholder: "0-59",
-    },
-    {
-      name: "auto",
-      label: "Tự động",
-      type: "checkbox",
-      placeholder: "Bật chế độ tự động",
-    },
-    {
-      name: "toggle",
-      label: "Bật thiết bị",
-      type: "checkbox",
-    },
+    // {
+    //   name: "hour_on",
+    //   label: "Giờ bật",
+    //   type: "number",
+    //   required: true,
+    //   min: 0,
+    //   max: 23,
+    //   placeholder: "0-23",
+    // },
+    // {
+    //   name: "minute_on",
+    //   label: "Phút bật",
+    //   type: "number",
+    //   required: true,
+    //   min: 0,
+    //   max: 59,
+    //   placeholder: "0-59",
+    // },
+    // {
+    //   name: "hour_off",
+    //   label: "Giờ tắt",
+    //   type: "number",
+    //   required: true,
+    //   min: 0,
+    //   max: 23,
+    //   placeholder: "0-23",
+    // },
+    // {
+    //   name: "minute_off",
+    //   label: "Phút tắt",
+    //   type: "number",
+    //   required: true,
+    //   min: 0,
+    //   max: 59,
+    //   placeholder: "0-59",
+    // },
+    // {
+    //   name: "auto",
+    //   label: "Tự động",
+    //   type: "checkbox",
+    //   placeholder: "Bật chế độ tự động",
+    // },
+    // {
+    //   name: "toggle",
+    //   label: "Bật thiết bị",
+    //   type: "checkbox",
+    // },
   ];
 
   // Only show tenant selection for admin/superadmin
@@ -197,8 +197,8 @@ export const DevicesPage: React.FC = () => {
       header: "Địa chỉ MAC",
       accessor: "mac" as keyof Device,
       sortable: true,
-      editable: isAdmin,
-      type: "text"
+      editable: isSuperAdmin,
+      type: "text",
     },
     {
       header: "Giờ bật",
@@ -270,8 +270,7 @@ export const DevicesPage: React.FC = () => {
       setIsSubmitting(false);
     }
   };
-
-  // Handle edit device
+  // Handle edit device 
   const handleEditDevice = async (id: string, data: Partial<CreateDeviceData>) => {
     if (!token) return;
     try {
@@ -365,7 +364,7 @@ export const DevicesPage: React.FC = () => {
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl md:text-3xl font-bold">Quản lý thiết bị</h1>
-          {isAdmin && (
+          {isSuperAdmin && (
             <button
               onClick={() => setCreating(!creating)}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center"
@@ -376,7 +375,7 @@ export const DevicesPage: React.FC = () => {
           )}
         </div>
 
-        {creating && isAdmin && (
+        {creating && isSuperAdmin && (
           <CreateForm
             fields={deviceFields}
             initialValues={newDevice}
@@ -404,6 +403,7 @@ export const DevicesPage: React.FC = () => {
                 onDelete={isAdmin ? handleDeleteDevice : undefined}
                 idField="_id"
                 editableRows={isAdmin}
+                isDeletable={isSuperAdmin}
               />
             )}
 
@@ -435,7 +435,10 @@ export const DevicesPage: React.FC = () => {
                               handleDeleteDevice(device._id);
                             }
                           }}
-                          className="text-red-600 hover:text-red-800"
+                          className={`hover:text-red-800 ${
+                            !isSuperAdmin ? "text-gray-400 cursor-not-allowed" : "text-red-600"
+                          }`}
+                          disabled={!isSuperAdmin}
                         >
                           Xóa
                         </button>

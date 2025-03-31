@@ -15,6 +15,7 @@ export type FormField<T> = {
   min?: number; // For number input
   max?: number; // For number input
   visible?: boolean; // For conditional rendering
+  disabled?: boolean; // For disabling the field
 };
 
 export type CreateFormProps<T> = {

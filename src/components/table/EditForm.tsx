@@ -86,7 +86,7 @@ export function EditForm<T>({
   const renderField = (field: FormField<T>) => {
     const value = values[field.name as keyof T];
     const error = errors[field.name as string];
-    
+    const isDisabled = field.disabled === true || isSubmitting;
     // Special handling for password and email fields by checking name
     if (field.name === 'password') {
       return (
@@ -99,7 +99,7 @@ export function EditForm<T>({
           value={value as string || ''}
           onChange={(e) => handleChange(field, e.target.value)}
           placeholder={field.placeholder}
-          disabled={isSubmitting}
+          disabled={isDisabled}
         />
       );
     }
@@ -115,7 +115,7 @@ export function EditForm<T>({
           value={value as string || ''}
           onChange={(e) => handleChange(field, e.target.value)}
           placeholder={field.placeholder}
-          disabled={isSubmitting}
+          disabled={isDisabled}
         />
       );
     }
@@ -132,7 +132,7 @@ export function EditForm<T>({
           value={value as string || ''}
           onChange={(e) => handleChange(field, e.target.value)}
           placeholder={field.placeholder}
-          disabled={isSubmitting}
+          disabled={isDisabled}
         />
       );
     }
@@ -150,7 +150,7 @@ export function EditForm<T>({
             value={value as number || 0}
             onChange={(e) => handleChange(field, parseInt(e.target.value) || 0)}
             placeholder={field.placeholder}
-            disabled={isSubmitting}
+            disabled={isDisabled}
             min={field.min}
             max={field.max}
           />
@@ -163,7 +163,7 @@ export function EditForm<T>({
             className="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
             checked={value as boolean || false}
             onChange={(e) => handleChange(field, e.target.checked)}
-            disabled={isSubmitting}
+            disabled={isDisabled}
           />
         );
       case 'select':
@@ -175,7 +175,7 @@ export function EditForm<T>({
             } focus:outline-none focus:ring-2 focus:ring-blue-500`}
             value={value as string || ''}
             onChange={(e) => handleChange(field, e.target.value)}
-            disabled={isSubmitting}
+            disabled={isDisabled}
           >
             <option value="">-- Chọn --</option>
             {field.options?.map((option) => (

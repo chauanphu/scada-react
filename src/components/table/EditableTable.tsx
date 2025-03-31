@@ -22,6 +22,7 @@ export type EditableTableProps<T, K extends object = {}> = Omit<TableProps<T>, '
   editableRows?: boolean;
   onEdit: (id: string | number, data: Partial<K>) => Promise<void>;
   onDelete?: (id: string | number) => Promise<void>;
+  isDeletable?: boolean;
   idField: keyof T;
 };
 
@@ -31,6 +32,7 @@ export function EditableTable<T extends object, K extends object = Partial<T>>({
   editableRows = true,
   onEdit,
   onDelete,
+  isDeletable = true,
   idField,
   ...tableProps
 }: EditableTableProps<T, K>) {
@@ -73,7 +75,8 @@ export function EditableTable<T extends object, K extends object = Partial<T>>({
   };
 
   const handleDelete = async (id: string | number) => {
-    if (!onDelete) return;
+    if (!onDelete || !isDeletable) return;
+    console.log(isDeletable);
     if (window.confirm('Bạn có chắc chắn muốn xóa mục này không?')) {
       try {
         await onDelete(id);
@@ -82,7 +85,6 @@ export function EditableTable<T extends object, K extends object = Partial<T>>({
       }
     }
   };
-
   const renderActions = (item: T) => {
     const id = item[idField] as string | number;
     const isEditing = editingId === id;
@@ -134,8 +136,10 @@ export function EditableTable<T extends object, K extends object = Partial<T>>({
                   e.stopPropagation();
                   handleDelete(id);
                 }}
-                className="text-red-600 hover:text-red-800"
-              >
+                className={`hover:text-red-800 ${
+                  !isDeletable ? "text-gray-400 cursor-not-allowed" : "text-red-600"
+                }`}
+                disabled={!isDeletable}>
                 Xóa
               </button>
             )}
