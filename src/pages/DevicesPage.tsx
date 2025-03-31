@@ -323,7 +323,11 @@ export const DevicesPage: React.FC = () => {
           selectedDevice[typedKey] !== updatedDevice[typedKey] && 
           typedKey !== '_id'
         ) {
-          updatedFields[typedKey as keyof CreateDeviceData] = updatedDevice[typedKey];
+          // Fix the type error by properly casting the value
+          if (typedKey in updatedDevice) {
+            updatedFields[typedKey as keyof CreateDeviceData] = 
+              updatedDevice[typedKey] as any;
+          }
         }
       });
 
