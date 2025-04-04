@@ -1,6 +1,7 @@
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAPI } from "./contexts/APIProvider";
 import { Navbar } from "./components/NavBar";
+import Footer from "./components/Footer";
 import { useState, useEffect } from "react";
 
 const RootLayout = () => {
@@ -26,11 +27,12 @@ const RootLayout = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-100 flex flex-col">
       <Navbar />
-      <main className={`${location.pathname === '/' ? 'container mx-auto w-full px-4' : 'container mx-auto px-4'} py-8`}>
+      <main className={`${location.pathname === '/' ? 'container mx-auto w-full px-4' : 'container mx-auto px-4'} py-8 flex-grow`}>
         <Outlet />
       </main>
+      <Footer />
     </div>
   );
 };
